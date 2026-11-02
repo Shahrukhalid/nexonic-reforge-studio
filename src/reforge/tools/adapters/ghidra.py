@@ -38,6 +38,11 @@ def parse_export(data: dict, rel: str) -> list[Finding]:
                         "items": [{k: f.get(k) for k in ("name", "entry", "size", "signature")}
                                   for f in sorted(internal, key=lambda f: -f.get("size", 0))[:500]]},
                        Confidence.CONFIRMED, Provenance.PARSED, "Ghidra function analysis", rel))
+    dec = data.get("decompiler")
+    if dec is not None:
+        ok = dec.get("succeeded", 0) > 0 or dec.get("requested", 0) == 0
+        out.append(Finding(STAGE, "ghidra", "decompiler" if ok else "tool_error", "decompiler_status", dec,
+                           Confidence.CONFIRMED, Provenance.PARSED, "DecompInterface results", rel))
     edges = [[f["name"], c] for f in funcs for c in f.get("calls", [])]
     out.append(Finding(STAGE, "ghidra", "call_graph", "call_graph",
                        {"edges": len(edges), "items": edges[:5000]},

@@ -87,7 +87,9 @@ def test_ghidra_parse_export():
                  "signature": "int main(void)", "calls": ["puts"], "decompiled": "int main(void){puts(\"x\");}"},
                 {"name": "puts", "entry": "EXTERNAL:0", "size": 1, "thunk": False, "external": True,
                  "signature": "int puts(char *)", "calls": []}]}
+    data["decompiler"] = {"opened": True, "open_error": "", "requested": 1, "succeeded": 1, "errors": []}
     fs = {f.key: f for f in ghidra.parse_export(data, "a.out")}
+    assert fs["decompiler_status"].kind == "decompiler"
     assert fs["functions"].value["internal"] == 1
     assert fs["call_graph"].value["items"] == [["main", "puts"]]
     assert fs["main"].provenance.value == "decompiled"

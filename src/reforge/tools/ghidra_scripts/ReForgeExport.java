@@ -59,7 +59,10 @@ public class ReForgeExport extends GhidraScript {
         Set<Function> decSet = new HashSet<>(bySize.subList(0, Math.min(maxDec, bySize.size())));
 
         DecompInterface di = new DecompInterface();
-        di.openProgram(currentProgram);
+        boolean opened = di.openProgram(currentProgram);
+        String openError = opened ? "" : di.getLastMessage();
+        List<String> decErrors = new ArrayList<>();
+        int decOk = 0;
         try (PrintWriter w = new PrintWriter(new OutputStreamWriter(new FileOutputStream(out), "UTF-8"))) {
             w.print("{\"program\":\"" + esc(currentProgram.getName()) + "\"");
             w.print(",\"language\":\"" + esc(currentProgram.getLanguageID().toString()) + "\"");
@@ -88,11 +91,19 @@ public class ReForgeExport extends GhidraScript {
                     DecompileResults r = di.decompileFunction(f, decTimeout, monitor);
                     if (r != null && r.decompileCompleted() && r.getDecompiledFunction() != null) {
                         w.print(",\"decompiled\":\"" + esc(r.getDecompiledFunction().getC()) + "\"");
+                        decOk++;
+                    } else if (decErrors.size() < 5) {
+                        decErrors.add(f.getName() + ": " + (r == null ? "no result" : r.getErrorMessage()));
                     }
                 }
                 w.print("}");
             }
-            w.print("]}");
+            w.print("],\"decompiler\":{\"opened\":" + opened + ",\"open_error\":\"" + esc(openError) + "\"");
+            w.print(",\"requested\":" + decSet.size() + ",\"succeeded\":" + decOk + ",\"errors\":[");
+            for (int i = 0; i < decErrors.size(); i++) {
+                w.print((i > 0 ? "," : "") + "\"" + esc(decErrors.get(i)) + "\"");
+            }
+            w.print("]}}");
         } finally {
             di.dispose();
         }
