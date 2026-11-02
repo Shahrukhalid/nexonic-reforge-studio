@@ -10,12 +10,12 @@ jobs:
       matrix:
         include:
           - { os: macos-14, label: AppleSilicon }
-          - { os: macos-13, label: Intel }
+          - { os: macos-15-intel, label: Intel }
           - { os: windows-2022, label: win }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
       - run: pip install -e ".[dev]"
       - run: pytest -q

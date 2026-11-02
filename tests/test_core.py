@@ -9,10 +9,21 @@ from reforge.core.safety import Limits, UnsafeInput, run_tool, safe_member_path
 from reforge.tools import registry
 
 
-@pytest.mark.parametrize("key,fmt", [("apk", "apk"), ("jar", "jar"), ("wasm", "wasm"), ("asar", "asar"),
-                                     ("elf", "elf")])
+@pytest.mark.parametrize("key,fmt", [("apk", "apk"), ("jar", "jar"), ("wasm", "wasm"), ("asar", "asar")])
 def test_identify(samples, key, fmt):
     assert identify.identify(samples[key]).fmt == fmt
+
+
+def test_identify_native(samples):
+    from conftest import NATIVE_FMT
+    assert identify.identify(samples["native"]).fmt in NATIVE_FMT
+
+
+def test_lief_native(samples):
+    fs = binary.analyze(samples["native"])
+    hdr = next(f.value for f in fs if f.key.endswith("header"))
+    assert hdr["format"] in {"ELF", "PE", "MACHO"}
+    assert any(f.key.endswith("libraries") and f.value for f in fs)
 
 
 def test_identify_ignores_extension(tmp_path, samples):
@@ -30,6 +41,8 @@ def test_macho_object(samples):
 
 
 def test_lief_elf(samples):
+    if "elf" not in samples:
+        pytest.skip("ELF sample only on Linux")
     fs = {f.key: f.value for f in binary.analyze(samples["elf"])}
     assert fs["header"]["format"] == "ELF"
     assert fs["imported_functions"]["count"] > 0
@@ -74,7 +87,8 @@ def test_strings_network(samples, tmp_path):
 
 def test_secrets_redacted(tmp_path):
     p = tmp_path / "s.bin"
-    p.write_bytes(b"key=AKIAABCDEFGHIJKLMNOP\0")
+    fake = "AK" + "IA" + "ABCDEFGHIJKLMNOP"   # assembled at runtime: dummy value, not a credential
+    p.write_bytes(b"key=" + fake.encode() + b"\0")
     fs = {f.key: f.value for f in strings.analyze(p)}
     assert "AKIA" not in str(fs["possible_secrets"])
 
@@ -98,7 +112,7 @@ def test_registry_complete():
             assert s.location
 
 
-@pytest.mark.parametrize("key,profile", [("elf", "standard"), ("apk", "standard"), ("asar", "standard"),
+@pytest.mark.parametrize("key,profile", [("native", "standard"), ("apk", "standard"), ("asar", "standard"),
                                          ("jar", "deep"), ("wasm", "quick")])
 def test_orchestrator_end_to_end(db, samples, key, profile):
     pid = db.create_project(key, str(samples[key]), profile)
@@ -125,7 +139,7 @@ def test_orchestrator_blocks_slip(db, samples):
 
 def test_report_export(db, samples, tmp_path):
     from reforge.analysis import report
-    pid = db.create_project("elf", str(samples["elf"]), "standard")
+    pid = db.create_project("native", str(samples["native"]), "standard")
     Orchestrator(db).analyze(pid)
     md = report.export(db, pid, tmp_path / "r.md").read_text()
     assert "## binary" in md and "lief" in md
@@ -146,6 +160,8 @@ def test_delete_project(db, samples):
 # ---- integration tests: run only where the external tool is actually installed
 @pytest.mark.skipif(not shutil.which("rabin2"), reason="radare2 not installed")
 def test_radare2_adapter(db, samples):
+    if "elf" not in samples:
+        pytest.skip("ELF sample only on Linux")
     pid = db.create_project("elf", str(samples["elf"]), "standard")
     Orchestrator(db).analyze(pid)
     r = next(x for x in db.findings(pid, stage="tools") if x["tool"] == "radare2")

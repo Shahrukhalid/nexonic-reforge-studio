@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dummy credential-shaped strings used to test secret redaction"
+commits = ["144f6ff"]
+paths = ['''tests/.*''']

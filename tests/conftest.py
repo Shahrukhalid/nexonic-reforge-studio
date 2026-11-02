@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+NATIVE_FMT = {"darwin": {"macho", "macho-fat"}, "win32": {"pe"}}.get(sys.platform, {"elf"})
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -70,7 +72,10 @@ def samples(tmp_path):
     s["bomb"] = d / "bomb.zip"
     with zipfile.ZipFile(s["bomb"], "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("zeros.bin", b"\0" * (80 * 1024 * 1024))
-    s["elf"] = Path(shutil.which("ls") or "/bin/ls").resolve()
+    # host-native executable: ELF on Linux, Mach-O (often universal) on macOS, PE on Windows
+    s["native"] = Path(sys.executable).resolve()
+    if sys.platform.startswith("linux"):
+        s["elf"] = Path(shutil.which("ls") or "/bin/ls").resolve()
     clang = shutil.which("clang")
     if clang:
         c = d / "t.c"
