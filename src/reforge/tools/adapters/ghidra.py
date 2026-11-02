@@ -39,6 +39,8 @@ def parse_export(data: dict, rel: str) -> list[Finding]:
                                   for f in sorted(internal, key=lambda f: -f.get("size", 0))[:500]]},
                        Confidence.CONFIRMED, Provenance.PARSED, "Ghidra function analysis", rel))
     dec = data.get("decompiler")
+    if dec is not None and "decompiler executable" in dec.get("open_error", ""):
+        dec = dec | {"hint": BUILD_HINT}
     if dec is not None:
         ok = dec.get("succeeded", 0) > 0 or dec.get("requested", 0) == 0
         out.append(Finding(STAGE, "ghidra", "decompiler" if ok else "tool_error", "decompiler_status", dec,
@@ -84,9 +86,33 @@ def _err(rel: str, msg: str, res: ToolResult | None = None) -> tuple[str, list[F
 DEFAULT_JAVA_MIN = 25   # Ghidra 12.x
 
 
+def ghidra_root(exe: str) -> Path:
+    return Path(exe).resolve().parent.parent
+
+
+def native_platform() -> str:
+    import platform
+    import sys
+    m = platform.machine().lower()
+    arch = "arm_64" if m in ("arm64", "aarch64") else "x86_64"
+    osn = {"darwin": "mac", "win32": "win"}.get(sys.platform, "linux")
+    return f"{osn}_{arch}"
+
+
+def decompiler_native(exe: str) -> Path:
+    """Where Ghidra expects its native decompiler for this host. Official zips ship only linux_x86_64 and
+    win_x86_64; other hosts (e.g. macOS) must build it once with support/buildNatives."""
+    name = "decompile.exe" if native_platform().startswith("win") else "decompile"
+    return ghidra_root(exe) / "Ghidra" / "Features" / "Decompiler" / "os" / native_platform() / name
+
+
+BUILD_HINT = ("Ghidra's release has no prebuilt decompiler for this platform. Build it once with: "
+              "reforge-cli toolpack build-natives ghidra  (macOS needs Xcode Command Line Tools)")
+
+
 def required_java(exe: str) -> int:
     """Minimum JDK major version declared by this Ghidra install (Ghidra/application.properties)."""
-    props = Path(exe).resolve().parent.parent / "Ghidra" / "application.properties"
+    props = ghidra_root(exe) / "Ghidra" / "application.properties"
     try:
         for line in props.read_text(errors="replace").splitlines():
             if line.strip().startswith("application.java.min="):

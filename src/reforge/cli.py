@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -25,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--json", action="store_true")
     sub.add_parser("doctor", help="check JDK, tool packs and external engines on this machine")
     tp = sub.add_parser("toolpack", help="install/list verified tool packs")
-    tp.add_argument("action", choices=["list", "install", "uninstall"])
+    tp.add_argument("action", choices=["list", "install", "uninstall", "build-natives"])
     tp.add_argument("pack", nargs="?")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -37,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
         need = required_java(gx) if gx else DEFAULT_JAVA_MIN
         j = jdk.find_jdk(need)
         print(f"JDK {need}+        : {'OK  ' + str(j[1]) + '  ' + str(j[0]) if j else f'MISSING - Ghidra needs JDK {need}+ (macOS: brew install openjdk)'}")
+        if gx:
+            from .tools.adapters.ghidra import decompiler_native, native_platform
+            d = decompiler_native(gx)
+            print(f"Ghidra decomp. : {'OK  ' + str(d) if d.is_file() else 'MISSING for ' + native_platform() + ' - run: reforge-cli toolpack build-natives ghidra'}")
         for pid, spec in toolpacks.packs().items():
             print(f"pack {pid:<9} : {'installed' if toolpacks.is_installed(pid) else 'not installed'} ({spec['version']})")
         for s in registry.all_status():
@@ -53,6 +59,29 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if not args.pack:
             ap.error("pack id required")
+        if args.action == "build-natives":
+            if args.pack != "ghidra":
+                ap.error("build-natives is only needed for ghidra")
+            from .tools import jdk
+            from .tools.adapters.ghidra import decompiler_native, ghidra_root, required_java
+            gx = registry.find_exe("Ghidra")
+            if not gx:
+                ap.error("Ghidra is not installed: reforge-cli toolpack install ghidra")
+            root = ghidra_root(gx)
+            script = root / "support" / ("buildNatives.bat" if os.name == "nt" else "buildNatives")
+            if not script.is_file():
+                print(f"not found: {script}")
+                return 1
+            found = jdk.find_jdk(required_java(gx))
+            if not found:
+                print("JDK missing - see: reforge-cli doctor")
+                return 1
+            print(f"Building Ghidra native components in {root} (Ghidra's own script; takes a few minutes)...")
+            env = {**os.environ, **jdk.env_for(found[0])}
+            rc = subprocess.call([str(script)], cwd=str(root / "support"), env=env)
+            ok = decompiler_native(gx).is_file()
+            print("decompiler:", "OK " + str(decompiler_native(gx)) if ok else "still missing (see output above)")
+            return 0 if ok else (rc or 1)
         if args.action == "install":
             last = [-1]
 

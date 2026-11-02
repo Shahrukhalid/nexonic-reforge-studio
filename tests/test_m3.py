@@ -158,6 +158,16 @@ def test_ghidra_reports_missing_jdk(monkeypatch, samples):
     assert status == "error" and "JDK 25" in fs[0].value["error"]
 
 
+def test_decompiler_native_path_and_hint(tmp_path):
+    exe = tmp_path / "support" / "analyzeHeadless"
+    p = ghidra.decompiler_native(str(exe))
+    assert p.parent.name == ghidra.native_platform() and p.parts[-4:-2] == ("Decompiler", "os")
+    data = {"functions": [], "decompiler": {"opened": False, "open_error": "Could not find decompiler executable",
+                                            "requested": 3, "succeeded": 0, "errors": []}}
+    st = next(f for f in ghidra.parse_export(data, "x") if f.key == "decompiler_status")
+    assert st.kind == "tool_error" and "build-natives" in st.value["hint"]
+
+
 def test_ghidra_required_java_from_properties(tmp_path):
     (tmp_path / "Ghidra").mkdir()
     (tmp_path / "support").mkdir()
