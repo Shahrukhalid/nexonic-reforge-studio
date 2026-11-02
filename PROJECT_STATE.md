@@ -1,9 +1,9 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-02 · v0.3.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-03 · v0.3.0 · Publisher: Nexonic Technologies_
 
 ## Current milestone
-**M1 — done (verified on real Mac). M2 — done. M3 Core tool integration — done (CI run 41469838668: real Ghidra 12.2 + DIE 3.21 + radare2 + WABT all PASSED).** **M4 Platform-specific analysis — code complete (v0.3.0)**: Android, PyInstaller, .NET, MSI native; JADX/ILSpy/pycdc adapters written.
+**M1 — done (verified on real Mac). M2 — done. M3 Core tool integration — done (CI run 41469838668: real Ghidra 12.2 + DIE 3.21 + radare2 + WABT all PASSED).** **M4 Platform-specific analysis — done (v0.3.0, CI run 41545044291 all green on Linux/macOS arm64+x64/Windows; tag v0.3.0 pushed)**: Android, PyInstaller, .NET, MSI native; JADX/ILSpy/pycdc adapters written.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite, thread-pool tasks, PyInstaller packaging (see docs/ARCHITECTURE.md)
@@ -33,12 +33,12 @@ _Last updated: 2026-11-02 · v0.3.0 · Publisher: Nexonic Technologies_
 - 31 registry entries still `verification: pending` (anonymous GitHub API limit). Re-run via browser helper + `scripts/apply_verification.py`, or `GITHUB_TOKEN=… python scripts/verify_registry.py`.
 - AAB (protobuf) manifests, NSIS/Inno installers, PYZ module listing (needs safe unmarshal) not implemented.
 - JADX, ILSpy, pycdc, capa, FLOSS, GoReSym, Rizin adapters written but NOT yet verified against real installs (need pinned release digests; add to CI integration job).
-- Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra 12.2 needs JDK 25; on macOS / Linux-arm64 its decompiler must be built once (`reforge-cli toolpack build-natives ghidra`, needs Xcode CLT).
+- Tool packs: only Ghidra so far (GUI install/build buttons since v0.3.0). Ghidra 12.2 needs JDK 25; on macOS / Linux-arm64 its decompiler must be built once (`reforge-cli toolpack build-natives ghidra`, needs Xcode CLT).
 - Dynamic analysis intentionally disabled (no verified isolation environment).
 - Code signing/notarization: workflow hooks only; nothing is signed.
 
 ## Next tasks (in order)
-1. Push v0.3.0; CI on all OS (PyInstaller + .NET tests now run everywhere); tag v0.3.0.
+1. Install-test v0.3.0 DMG (APK/MSI import, Tool Manager setup panel).
 2. Pin JADX + ilspycmd + pycdc in CI integration job and verify adapters.
 2. Verify remaining 31 registry entries.
 3. M5: extend registry coverage + tool packs (JADX, DIE for macOS/Windows); remaining 31 registry verifications.
