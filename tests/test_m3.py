@@ -106,6 +106,9 @@ def test_ghidra_integration(db, samples):
     errors = [r["value"] for r in rows if r["kind"] == "tool_error"]
     funcs = next((r for r in rows if r["key"] == "functions"), None)
     assert funcs is not None, f"Ghidra produced no functions; errors={errors}; runs={db.tool_runs(pid)}"
+    prog = next(r for r in rows if r["key"] == "ghidra_program")["value"]
+    need = ghidra.required_java(registry.find_exe("Ghidra"))
+    assert int(prog["jdk"].split()[0]) >= need, prog      # the JDK ReForge chose is the one Ghidra used
     assert funcs["value"]["internal"] > 10
     assert any(r["kind"] == "decompiled" for r in rows)
 

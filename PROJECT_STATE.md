@@ -1,6 +1,6 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-02 · v0.2.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-02 · v0.2.x · Publisher: Nexonic Technologies_
 
 ## Current milestone
 **M1 — done (verified on real Mac). M2 — done. M3 Core tool integration — done (CI run 41469838668: real Ghidra 12.2 + DIE 3.21 + radare2 + WABT all PASSED).** Next: M4.
@@ -24,6 +24,7 @@ _Last updated: 2026-11-02 · v0.2.0 · Publisher: Nexonic Technologies_
 - `ruff check`: clean
 - PyInstaller Linux build: built and launched (frozen app starts, logs startup)
 - **GitHub CI run #2 (46ee4cb): SUCCESS** on ubuntu-24.04, macos-14 (arm64), macos-15-intel, windows-2022 + audit (pip-audit, gitleaks)
+- **Real Mac (Apple Silicon, macOS 26) field test 2026-11-02:** Ghidra 12.2 Deep scan of Chess.app → 3,452 functions, 6,489 call edges, **25/25 functions decompiled** (after `toolpack build-natives`). Fixed on the way: certifi TLS, JDK 25 discovery, universal-binary thinning, gradlew native build.
 - **CI 7fd6ce0: ALL GREEN** — 4 OS test jobs, audit (pip-audit caught capstone PYSEC-2026-3544 → fixed 5.0.8), integration 4/4 passed
 - **Release workflow v0.1.0: SUCCESS** — 3 builds (macOS AppleSilicon DMG, macOS Intel DMG, Windows Setup EXE) + draft GitHub release. Unsigned. Not yet install-tested by a human.
 
@@ -32,12 +33,12 @@ _Last updated: 2026-11-02 · v0.2.0 · Publisher: Nexonic Technologies_
 - Binary AXML (AndroidManifest) not decoded yet — needs Androguard adapter (M4).
 - MSI internals, NSIS/Inno installers, PyInstaller archive extraction not implemented (M4).
 - JADX, ILSpy, capa, FLOSS, GoReSym, Rizin adapters not yet verified against real installs.
-- Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra 12.2 needs JDK 25 (read from its application.properties).
+- Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra 12.2 needs JDK 25; on macOS / Linux-arm64 its decompiler must be built once (`reforge-cli toolpack build-natives ghidra`, needs Xcode CLT).
 - Dynamic analysis intentionally disabled (no verified isolation environment).
 - Code signing/notarization: workflow hooks only; nothing is signed.
 
 ## Next tasks (in order)
-1. Tag v0.2.0 → release build; install-test on Mac (Deep scan needs JDK 21 + `reforge-cli toolpack install ghidra`).
+1. Tag v0.2.1 (field-test fixes) → release; GUI: Tool Manager install/build buttons + JDK status.
 2. Verify remaining 31 registry entries.
 3. Tool Manager: "Install" button for tool packs (+ JDK check); DIE pack for macOS/Windows.
 4. M4: Androguard (APK manifest/permissions/components), PyInstaller extraction, .NET metadata (dnfile) + ilspycmd, JADX, MSI (msitools/7z).
