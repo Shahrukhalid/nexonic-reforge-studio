@@ -141,9 +141,10 @@ class Orchestrator:
             ctx.progress(base, f"Analysing {rel}")
             if p.is_file():
                 self._rec(pid, fingerprint.scan_bytes(p) if profile != "quick" or i == 0 else [])
-            if profile == "quick":
+            quick = profile == "quick"
+            if quick and i > 0:
                 continue
-            if fm in NATIVE:
+            if fm in NATIVE and not quick:
                 t = time.time()
                 try:
                     fs = binary.analyze(p, rel)
@@ -158,7 +159,8 @@ class Orchestrator:
                 except Exception as e:  # noqa: BLE001
                     self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "error", str(e))
             ctx.check()
-            self._rec(pid, strings.analyze(p, rel))
+            if not quick:
+                self._rec(pid, strings.analyze(p, rel))
             for a in adapters.applicable(fm, profile):
                 ctx.check()
                 if a.max_subjects is not None and used.get(a.tool, 0) >= a.max_subjects:

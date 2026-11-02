@@ -53,7 +53,10 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Ghidra 12.2 via ReForge tool-pack installer (sha256-pinned)
         env: { REFORGE_HOME: "${{ runner.temp }}/reforge" }
-        run: reforge-cli toolpack install ghidra && reforge-cli toolpack list
+        run: |
+          reforge-cli toolpack install ghidra && reforge-cli toolpack list
+          echo "GHIDRA_INSTALL_DIR=$REFORGE_HOME/tools/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
+          test -x "$REFORGE_HOME/tools/ghidra/ghidra_12.2_PUBLIC/support/analyzeHeadless"
       - name: Integration tests
         env: { QT_QPA_PLATFORM: offscreen, REFORGE_HOME: "${{ runner.temp }}/reforge" }
         run: pytest -v tests/test_m3.py tests/test_core.py -k "integration or adapter" -rs

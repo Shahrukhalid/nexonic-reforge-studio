@@ -95,6 +95,8 @@ def test_ghidra_parse_export():
 
 @pytest.mark.skipif(not registry.find_exe("Ghidra"), reason="Ghidra not installed")
 def test_ghidra_integration(db, samples):
+    if not registry.find_exe("Ghidra"):   # re-check under the per-test REFORGE_HOME
+        pytest.skip("Ghidra not reachable (set GHIDRA_INSTALL_DIR)")
     target = samples.get("elf") or samples["native"]
     pid = db.create_project("g", str(target), "deep")
     Orchestrator(db).analyze(pid)

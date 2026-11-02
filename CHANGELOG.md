@@ -7,6 +7,8 @@
 - Verified tool-pack installer (`reforge-cli toolpack install ghidra`): pinned HTTPS URL, SHA-256 checked before extraction, safe extraction limits
 - CI integration job running real Ghidra 12.2 and Detect It Easy 3.21 (both SHA-256 pinned)
 - Registry: 54/85 entries verified against the GitHub API (licence, archived, last push); 6 flagged unmaintained
+### Security
+- capstone 5.0.6 -> 5.0.8 (PYSEC-2026-3544), caught by the CI pip-audit gate
 ### Fixed
 - Tool Manager `#` column now sorts numerically
 - Analysis Workspace groups findings by stage, then by file; subjects show file names with full path on hover
