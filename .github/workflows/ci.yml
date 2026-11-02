@@ -42,7 +42,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: { python-version: "3.12", cache: pip }
       - uses: actions/setup-java@v5
-        with: { distribution: temurin, java-version: "21" }
+        with: { distribution: temurin, java-version: "25" }
+      - name: Remove other preinstalled JDKs so Ghidra cannot silently fall back
+        run: sudo rm -rf /usr/lib/jvm/* || true
       - run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon0 libgl1 radare2 wabt
       - name: Detect It Easy 3.21 (sha256-pinned)
         run: |

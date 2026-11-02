@@ -14,7 +14,7 @@
   "integration": "cli-adapter",
   "detect": "bin:analyzeHeadless",
   "priority": 1,
-  "notes": "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 21+. Tool pack: ghidra",
+  "notes": "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 25+ (Ghidra 12.x). Tool pack: ghidra",
   "verification": "verified",
   "maintained": true,
   "archived": false,

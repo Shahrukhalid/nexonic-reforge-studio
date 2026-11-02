@@ -1,4 +1,4 @@
-"""Locate a JDK of a required major version (Ghidra needs 21+).
+"""Locate a JDK of a required major version (Ghidra 12.x needs 25+; read from its application.properties).
 
 Searches JAVA_HOME, macOS java_home, Homebrew, common Linux/Windows locations,
 then PATH. Each candidate is verified by running `java -version`.
@@ -39,13 +39,13 @@ def _candidates() -> list[Path]:
         c.append(Path(os.environ["JAVA_HOME"]))
     if sys.platform == "darwin":
         try:
-            r = subprocess.run(["/usr/libexec/java_home", "-v", "21+"], capture_output=True, timeout=10)
+            r = subprocess.run(["/usr/libexec/java_home"], capture_output=True, timeout=10)   # newest installed
             if r.returncode == 0 and r.stdout.strip():
                 c.append(Path(r.stdout.decode().strip()))
         except (OSError, subprocess.TimeoutExpired):
             pass
         for prefix in ("/opt/homebrew", "/usr/local"):
-            for pat in ("opt/openjdk@2[1-9]/libexec/openjdk.jdk/Contents/Home", "opt/openjdk/libexec/openjdk.jdk/Contents/Home"):
+            for pat in ("opt/openjdk/libexec/openjdk.jdk/Contents/Home", "opt/openjdk@[2-9][0-9]/libexec/openjdk.jdk/Contents/Home"):
                 c += [Path(p) for p in sorted(glob.glob(f"{prefix}/{pat}"), reverse=True)]
         c += [Path(p) for p in sorted(glob.glob("/Library/Java/JavaVirtualMachines/*/Contents/Home"), reverse=True)]
     elif os.name == "nt":
@@ -66,7 +66,7 @@ def _candidates() -> list[Path]:
 
 
 @lru_cache(maxsize=4)
-def find_jdk(min_major: int = 21) -> tuple[Path, int] | None:
+def find_jdk(min_major: int = 25) -> tuple[Path, int] | None:
     """Return (JAVA_HOME, major) for the first JDK >= min_major, else None."""
     for home in _candidates():
         jb = _java_bin(home)

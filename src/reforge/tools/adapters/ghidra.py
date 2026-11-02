@@ -76,11 +76,27 @@ def _err(rel: str, msg: str, res: ToolResult | None = None) -> tuple[str, list[F
     return "error", [Finding(STAGE, "ghidra", "tool_error", "ghidra", v, Confidence.CONFIRMED, subject=rel)], res
 
 
+DEFAULT_JAVA_MIN = 25   # Ghidra 12.x
+
+
+def required_java(exe: str) -> int:
+    """Minimum JDK major version declared by this Ghidra install (Ghidra/application.properties)."""
+    props = Path(exe).resolve().parent.parent / "Ghidra" / "application.properties"
+    try:
+        for line in props.read_text(errors="replace").splitlines():
+            if line.strip().startswith("application.java.min="):
+                return int(line.split("=", 1)[1].strip())
+    except (OSError, ValueError):
+        pass
+    return DEFAULT_JAVA_MIN
+
+
 def run_ghidra(exe: str, target: Path, rel: str, timeout: int) -> tuple[str, list[Finding], ToolResult | None]:
-    found = jdk.find_jdk(21)
+    need = required_java(exe)
+    found = jdk.find_jdk(need)
     if found is None:
-        return _err(rel, "Ghidra needs JDK 21 or newer; none found (checked JAVA_HOME, java_home, Homebrew, "
-                         "standard JDK folders, PATH)")
+        return _err(rel, f"This Ghidra needs JDK {need} or newer; none found (checked JAVA_HOME, java_home, "
+                         "Homebrew, standard JDK folders, PATH)")
     home, major = found
     with tempfile.TemporaryDirectory(prefix="reforge-ghidra-") as tmp:
         target = Path(target)

@@ -32,8 +32,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "doctor":
         from .tools import jdk, toolpacks
-        j = jdk.find_jdk(21)
-        print(f"JDK 21+        : {'OK  ' + str(j[1]) + '  ' + str(j[0]) if j else 'MISSING (needed for Ghidra)'}")
+        from .tools.adapters.ghidra import DEFAULT_JAVA_MIN, required_java
+        gx = registry.find_exe("Ghidra")
+        need = required_java(gx) if gx else DEFAULT_JAVA_MIN
+        j = jdk.find_jdk(need)
+        print(f"JDK {need}+        : {'OK  ' + str(j[1]) + '  ' + str(j[0]) if j else f'MISSING - Ghidra needs JDK {need}+ (macOS: brew install openjdk)'}")
         for pid, spec in toolpacks.packs().items():
             print(f"pack {pid:<9} : {'installed' if toolpacks.is_installed(pid) else 'not installed'} ({spec['version']})")
         for s in registry.all_status():

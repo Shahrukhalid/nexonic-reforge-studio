@@ -145,13 +145,22 @@ def test_jdk_version_parsing(tmp_path, monkeypatch):
     monkeypatch.setattr(jdk, "_candidates", lambda: [tmp_path / "1.8.0_152", tmp_path / "21.0.13"])
     assert jdk.find_jdk(21) == (tmp_path / "21.0.13", 21)   # Java 8 is skipped
     jdk.find_jdk.cache_clear()
+    assert jdk.find_jdk(25) is None                         # Ghidra 12.x: 21 is not enough
+    jdk.find_jdk.cache_clear()
 
 
 def test_ghidra_reports_missing_jdk(monkeypatch, samples):
     from reforge.tools import jdk
-    monkeypatch.setattr(jdk, "find_jdk", lambda m=21: None)
+    monkeypatch.setattr(jdk, "find_jdk", lambda m=25: None)
     status, fs, _ = ghidra.run_ghidra("analyzeHeadless", samples["native"], "x", 60)
-    assert status == "error" and "JDK 21" in fs[0].value["error"]
+    assert status == "error" and "JDK 25" in fs[0].value["error"]
+
+
+def test_ghidra_required_java_from_properties(tmp_path):
+    (tmp_path / "Ghidra").mkdir()
+    (tmp_path / "support").mkdir()
+    (tmp_path / "Ghidra" / "application.properties").write_text("application.java.min=25\napplication.java.max=\n")
+    assert ghidra.required_java(str(tmp_path / "support" / "analyzeHeadless")) == 25
 
 
 def test_thin_universal_macho(tmp_path, samples):

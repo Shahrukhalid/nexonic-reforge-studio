@@ -32,7 +32,7 @@ _Last updated: 2026-11-02 · v0.2.0 · Publisher: Nexonic Technologies_
 - Binary AXML (AndroidManifest) not decoded yet — needs Androguard adapter (M4).
 - MSI internals, NSIS/Inno installers, PyInstaller archive extraction not implemented (M4).
 - JADX, ILSpy, capa, FLOSS, GoReSym, Rizin adapters not yet verified against real installs.
-- Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra needs JDK 21 on the user's machine.
+- Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra 12.2 needs JDK 25 (read from its application.properties).
 - Dynamic analysis intentionally disabled (no verified isolation environment).
 - Code signing/notarization: workflow hooks only; nothing is signed.
 

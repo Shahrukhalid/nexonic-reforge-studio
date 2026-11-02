@@ -17,7 +17,7 @@ L = ["linux"]
 # integration: python-lib | cli-adapter | external-app | plugin-host | reference-only | paid-host
 # detect: "bin:<exe>[|<exe>]" or "py:<module>" or "" (manual / not detectable)
 C = [
- (1, "Ghidra", "NationalSecurityAgency/ghidra", "core", "gui", ALL, "Apache-2.0", "cli-adapter", "bin:analyzeHeadless", 1, "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 21+. Tool pack: ghidra"),
+ (1, "Ghidra", "NationalSecurityAgency/ghidra", "core", "gui", ALL, "Apache-2.0", "cli-adapter", "bin:analyzeHeadless", 1, "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 25+ (Ghidra 12.x). Tool pack: ghidra"),
  (2, "radare2", "radareorg/radare2", "core", "cli", ALL, "LGPL-3.0", "cli-adapter", "bin:rabin2|r2", 1, ""),
  (3, "Frida", "frida/frida", "core", "library", ALL, "wxWindows-3.1", "python-lib", "py:frida", 2, "Dynamic instrumentation: only inside an approved isolated runtime"),
  (4, "x64dbg", "x64dbg/x64dbg", "core", "gui", W, "GPL-3.0", "external-app", "bin:x64dbg|x96dbg", 3, "Windows-only GUI debugger; launched externally"),

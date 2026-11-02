@@ -8,7 +8,7 @@
   "format": "zip",
   "platforms": ["macos", "windows", "linux"],
   "bin_dirs": ["ghidra_12.2_PUBLIC/support"],
-  "requires": "JDK 21+ (java on PATH or JAVA_HOME)",
+  "requires": "JDK 25+ (Ghidra/application.properties: application.java.min=25)",
   "size_hint_mb": 460
  }
 }
