@@ -103,7 +103,9 @@ def test_ghidra_integration(db, samples):
     pid = db.create_project("g", str(target), "deep")
     Orchestrator(db).analyze(pid)
     rows = [r for r in db.findings(pid, stage="tools") if r["tool"] == "ghidra"]
-    funcs = next(r for r in rows if r["key"] == "functions")
+    errors = [r["value"] for r in rows if r["kind"] == "tool_error"]
+    funcs = next((r for r in rows if r["key"] == "functions"), None)
+    assert funcs is not None, f"Ghidra produced no functions; errors={errors}; runs={db.tool_runs(pid)}"
     assert funcs["value"]["internal"] > 10
     assert any(r["kind"] == "decompiled" for r in rows)
 

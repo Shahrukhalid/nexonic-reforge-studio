@@ -43,8 +43,11 @@ jobs:
         with: { python-version: "3.12", cache: pip }
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: "25" }
-      - name: Remove other preinstalled JDKs so Ghidra cannot silently fall back
-        run: sudo rm -rf /usr/lib/jvm/* || true
+      - name: Hide other preinstalled JDKs so Ghidra cannot silently fall back
+        run: |
+          for d in /usr/lib/jvm/*; do sudo mv "$d" "/tmp/hidden-jdk-$(basename "$d")"; done
+          for v in $(env | grep -o '^JAVA_HOME_[0-9]*_X64'); do echo "$v=" >> "$GITHUB_ENV"; done
+          java -version
       - run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon0 libgl1 radare2 wabt
       - name: Detect It Easy 3.21 (sha256-pinned)
         run: |
@@ -63,8 +66,10 @@ jobs:
         env: { QT_QPA_PLATFORM: offscreen, REFORGE_HOME: "${{ runner.temp }}/reforge" }
         run: pytest -v tests/test_m3.py tests/test_core.py -k "integration or adapter" -rs
       - name: Ghidra end-to-end report
+        if: always()
         env: { REFORGE_HOME: "${{ runner.temp }}/reforge" }
         run: |
+          reforge-cli doctor
           reforge-cli analyze /usr/bin/ls --profile deep --report ghidra_report.md
           grep -c "decompiled" ghidra_report.md
       - uses: actions/upload-artifact@v5
