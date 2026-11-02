@@ -25,3 +25,20 @@ def test_gui_launch_and_analyze(qtbot, samples):
     assert tools.table.rowCount() == 85
     w.ctx.set_theme("light")
     w.close()
+
+
+def test_tool_setup_panel_and_duplicate_detection(qtbot, samples):
+    from reforge.ui.main_window import MainWindow
+
+    w = MainWindow()
+    qtbot.addWidget(w)
+    tools = w.pages["Tool Manager"]
+    tools.refresh()
+    assert "Ghidra:" in tools.setup_status.text() and "JDK" in tools.setup_status.text()
+    imp = w.pages["Import Application"]
+    pid = w.ctx.db.create_project("asar", str(samples["asar"]), "standard")
+    from reforge.analysis.orchestrator import Orchestrator
+    Orchestrator(w.ctx.db).analyze(pid)
+    assert imp._existing(samples["asar"])["id"] == pid          # same SHA-256 -> offered for re-run
+    assert imp._existing(samples["jar"]) is None
+    w.close()

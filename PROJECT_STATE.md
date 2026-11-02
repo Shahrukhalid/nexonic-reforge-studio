@@ -1,9 +1,9 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-02 · v0.2.x · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-02 · v0.3.0 · Publisher: Nexonic Technologies_
 
 ## Current milestone
-**M1 — done (verified on real Mac). M2 — done. M3 Core tool integration — done (CI run 41469838668: real Ghidra 12.2 + DIE 3.21 + radare2 + WABT all PASSED).** Next: M4.
+**M1 — done (verified on real Mac). M2 — done. M3 Core tool integration — done (CI run 41469838668: real Ghidra 12.2 + DIE 3.21 + radare2 + WABT all PASSED).** **M4 Platform-specific analysis — code complete (v0.3.0)**: Android, PyInstaller, .NET, MSI native; JADX/ILSpy/pycdc adapters written.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite, thread-pool tasks, PyInstaller packaging (see docs/ARCHITECTURE.md)
@@ -15,12 +15,13 @@ _Last updated: 2026-11-02 · v0.2.x · Publisher: Nexonic Technologies_
 - Strings: ASCII+UTF-16LE; URLs, domains, IPs, API paths, Windows paths, registry keys, SQL; secret patterns redacted
 - Tool adapters (no shell, timeout, output cap, env stripped of *_API_KEY/*_TOKEN): DIE, radare2, Rizin, WABT, capa, FLOSS, GoReSym. **Verified with real output in CI: Ghidra 12.2 headless (functions + decompilation), Detect It Easy 3.21, radare2, WABT.**
 - Registry: 85 entries, machine-readable JSON, live status per host using the 8 required status labels. **54 verified** via GitHub API (2026-11-02); 31 pending (API rate limit). Unmaintained: DerekSelander LLDB, class-dump, dex2jar, Il2CppDumper, UEViewer, Unity-game-hacking
+- v0.3.0: native AXML+DEX, PyInstaller extractor, .NET metadata (dnfile), native MSI tables (matches msiinfo), JADX/ILSpy/pycdc adapters, Tool Manager install/build buttons, duplicate-import prompt
 - v0.2.0: Capstone disassembly; Ghidra headless adapter + ReForgeExport.java; SHA-256-pinned tool-pack installer (Ghidra 12.2); grouped findings tree; numeric sort
 - Reports: Markdown + JSON with confidence/provenance; CLI `reforge-cli analyze|tools`
 - CI (ubuntu/macOS arm64/macOS x64/Windows) + release workflow (DMG ×2, Inno Setup EXE, draft GitHub release, optional signing/notarization via secrets)
 
 ## Latest test results (Linux x86-64, Python 3.13, PySide6 6.12.0, LIEF 1.0.0)
-- `pytest` (v0.2.0, sandbox): **38 passed, 2 skipped** (Ghidra/DIE not installable in sandbox → CI integration job)
+- `pytest` (v0.3.0, sandbox): **55 passed, 3 skipped** (Ghidra/DIE/universal-binary need CI or Mac)
 - `ruff check`: clean
 - PyInstaller Linux build: built and launched (frozen app starts, logs startup)
 - **GitHub CI run #2 (46ee4cb): SUCCESS** on ubuntu-24.04, macos-14 (arm64), macos-15-intel, windows-2022 + audit (pip-audit, gitleaks)
@@ -30,16 +31,16 @@ _Last updated: 2026-11-02 · v0.2.x · Publisher: Nexonic Technologies_
 
 ## Known limitations / bugs
 - 31 registry entries still `verification: pending` (anonymous GitHub API limit). Re-run via browser helper + `scripts/apply_verification.py`, or `GITHUB_TOKEN=… python scripts/verify_registry.py`.
-- Binary AXML (AndroidManifest) not decoded yet — needs Androguard adapter (M4).
-- MSI internals, NSIS/Inno installers, PyInstaller archive extraction not implemented (M4).
-- JADX, ILSpy, capa, FLOSS, GoReSym, Rizin adapters not yet verified against real installs.
+- AAB (protobuf) manifests, NSIS/Inno installers, PYZ module listing (needs safe unmarshal) not implemented.
+- JADX, ILSpy, pycdc, capa, FLOSS, GoReSym, Rizin adapters written but NOT yet verified against real installs (need pinned release digests; add to CI integration job).
 - Tool packs: only Ghidra so far; no GUI install button yet (CLI only). Ghidra 12.2 needs JDK 25; on macOS / Linux-arm64 its decompiler must be built once (`reforge-cli toolpack build-natives ghidra`, needs Xcode CLT).
 - Dynamic analysis intentionally disabled (no verified isolation environment).
 - Code signing/notarization: workflow hooks only; nothing is signed.
 
 ## Next tasks (in order)
-1. Tag v0.2.1 (field-test fixes) → release; GUI: Tool Manager install/build buttons + JDK status.
+1. Push v0.3.0; CI on all OS (PyInstaller + .NET tests now run everywhere); tag v0.3.0.
+2. Pin JADX + ilspycmd + pycdc in CI integration job and verify adapters.
 2. Verify remaining 31 registry entries.
-3. Tool Manager: "Install" button for tool packs (+ JDK check); DIE pack for macOS/Windows.
-4. M4: Androguard (APK manifest/permissions/components), PyInstaller extraction, .NET metadata (dnfile) + ilspycmd, JADX, MSI (msitools/7z).
+3. M5: extend registry coverage + tool packs (JADX, DIE for macOS/Windows); remaining 31 registry verifications.
+4. M6: feature discovery / Application Explorer.
 5. Optional tool-pack downloader with pinned URLs + SHA-256.

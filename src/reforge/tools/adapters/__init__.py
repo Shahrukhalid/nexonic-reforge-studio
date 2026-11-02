@@ -74,7 +74,25 @@ ADAPTERS: list[Adapter] = [
 ]
 
 
+from .decompilers import run_ilspy, run_jadx  # noqa: E402
 from .ghidra import run_ghidra  # noqa: E402
+
+
+def _pycdc(res: ToolResult, rel: str) -> list[Finding]:
+    if not res.stdout.strip():
+        return _json_or_text(res, "pycdc", "pycdc", rel)
+    return [Finding(STAGE, "pycdc", "decompiled", rel.rsplit("::", 1)[-1],
+                    {"code": res.stdout[:200_000], "stderr": res.stderr[-2000:]}, Confidence.TENTATIVE,
+                    Provenance.DECOMPILED, "pycdc output - partial support for new Python versions; not original source",
+                    rel)]
+
+
+ADAPTERS.append(Adapter("JADX", {"apk", "dex", "jar"}, {"deep"}, argv=lambda exe, t: [], timeout=1200,
+                        max_subjects=1, runner=run_jadx))
+ADAPTERS.append(Adapter("ILSpy", {"dotnet"}, {"deep"}, argv=lambda exe, t: [], timeout=1200,
+                        max_subjects=3, runner=run_ilspy))
+ADAPTERS.append(Adapter("pycdc (Decompyle++)", {"pyc"}, {"standard", "deep"}, argv=lambda exe, t: [exe, str(t)],
+                        parse=_pycdc, timeout=120, max_subjects=5))
 
 ADAPTERS.append(Adapter("Ghidra", {"elf", "pe", "macho", "macho-fat"}, {"deep"}, argv=lambda exe, t: [], timeout=1800,
                         max_subjects=1, runner=run_ghidra))

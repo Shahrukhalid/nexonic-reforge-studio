@@ -6,6 +6,10 @@ Bundled in installers:
 |---|---|---|
 | Qt 6 / PySide6 | LGPL-3.0 (dynamically linked) | https://www.qt.io / https://pypi.org/project/PySide6 |
 | LIEF | Apache-2.0 | https://github.com/lief-project/LIEF |
+| Capstone | BSD-3-Clause | https://github.com/capstone-engine/capstone |
+| dnfile | MIT | https://github.com/malwarefrank/dnfile |
+| olefile | BSD-2-Clause | https://github.com/decalage2/olefile |
+| certifi (CA bundle) | MPL-2.0 | https://github.com/certifi/python-certifi |
 | CPython runtime | PSF-2.0 | https://www.python.org |
 
 Every other tool in `src/reforge/tools/registry.json` is **detected, not bundled**. Each keeps its own licence (listed per entry, pending verification). GPL/AGPL and restricted-licence tools (e.g. OFRAK RBS Community License, UEViewer custom licence) are never redistributed with ReForge.

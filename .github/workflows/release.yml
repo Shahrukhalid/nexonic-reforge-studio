@@ -49,6 +49,7 @@ jobs:
         with: { path: out, merge-multiple: true }
       - uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
+          prerelease: true
           files: out/*
-          body: "Unsigned development build unless signing secrets were configured. See CHANGELOG.md."
+          body: "Private pre-release. Unsigned unless signing secrets are configured. See CHANGELOG.md."

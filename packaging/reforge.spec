@@ -13,5 +13,5 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="NexonicReForgeStudio"
 coll = COLLECT(exe, a.binaries, a.datas, name="NexonicReForgeStudio")
 if sys.platform == "darwin":
     app = BUNDLE(coll, name="Nexonic ReForge Studio.app", bundle_identifier="com.nexonic.reforgestudio",
-                 info_plist={"CFBundleShortVersionString": "0.2.0", "NSHighResolutionCapable": True,
+                 info_plist={"CFBundleShortVersionString": "0.3.0", "NSHighResolutionCapable": True,
                              "LSMinimumSystemVersion": "12.0", "NSHumanReadableCopyright": "Nexonic Technologies"})

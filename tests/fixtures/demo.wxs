@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Nexonic Demo Tool" Language="1033" Version="1.2.3" Manufacturer="Nexonic Technologies Test" UpgradeCode="8F2C1D4E-1B2A-4C3D-9E8F-112233445566">
+    <Package InstallerVersion="200" Compressed="yes" Comments="ReForge test fixture"/>
+    <Media Id="1" Cabinet="demo.cab" EmbedCab="yes"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="NexonicDemo">
+          <Component Id="MainFile" Guid="1A2B3C4D-5E6F-4A1B-8C9D-0E1F2A3B4C5D">
+            <File Id="Readme" Source="readme.txt" KeyPath="yes"/>
+            <RegistryValue Root="HKCU" Key="Software\NexonicDemo" Name="Installed" Type="integer" Value="1"/>
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id="Main" Level="1"><ComponentRef Id="MainFile"/></Feature>
+  </Product>
+</Wix>

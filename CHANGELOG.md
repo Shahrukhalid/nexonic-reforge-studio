@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0] - 2026-11-02
+### Added
+- Android: native binary-XML (AXML) manifest decoder - package, versions, SDK levels, permissions,
+  components with export status, manifest risk notes, readable XML; DEX header + class listing
+- PyInstaller: static CArchive reader/extractor; entry scripts written as valid .pyc for decompilers
+- .NET: assembly identity, references, types/methods, P/Invoke imports, resources (dnfile)
+- MSI: native Windows Installer reader (summary info + Property/File/Component/Registry/
+  CustomAction/ServiceInstall... tables) - no msitools needed; verified against msiinfo
+- Adapters: JADX (APK/DEX/JAR), ILSpy/ilspycmd (.NET), pycdc (.pyc) - deep/standard profiles
+- Tool Manager: Ghidra install + "Build decompiler" buttons with JDK/decompiler status
+- Import: re-analysing an identical file offers to re-run the existing project
+- Real test fixtures built with aapt/dx (APK) and wixl (MSI); PyInstaller + .NET samples built/fetched in tests
+### Changed
+- Releases are published as private pre-releases (draft releases are not visible to `gh release download`)
+- Dashboard columns size to content
+### Fixed (field test on Apple Silicon)
+- TLS via certifi, JDK 25 discovery for Ghidra 12.2, universal-binary thinning, Ghidra native build via gradlew
+
+
 ## [0.2.0] - 2026-11-02
 ### Added
 - Capstone disassembly (x86, x86-64, ARM, ARM64) of entry points and exported functions, per universal-binary slice

@@ -17,7 +17,7 @@ from ..core.findings import Confidence, Finding, Provenance
 from ..core.safety import Limits, UnsafeInput
 from ..core.tasks import TaskContext
 from ..tools import adapters
-from . import binary, disasm, extract, fingerprint, identify, strings
+from . import android, binary, disasm, dotnet, extract, fingerprint, identify, msi, pyinstaller, strings
 
 log = logging.getLogger("reforge.orchestrator")
 
@@ -25,6 +25,7 @@ PROFILES = ("quick", "standard", "deep")
 NATIVE = {"elf", "pe", "macho", "macho-fat", "appimage"}
 ZIPLIKE = {"apk", "aab", "ipa", "jar", "war", "nupkg", "zip", "wheel"}
 MAX_EMBEDDED_BINARIES = {"quick": 0, "standard": 12, "deep": 40}
+CONTAINER_TOOL_FORMATS = {"apk", "jar", "war"}
 
 
 class Orchestrator:
@@ -116,6 +117,11 @@ class Orchestrator:
                                     provenance=Provenance.EXTRACTED, subject=src.name)])
             self._rec(pid, fingerprint.scan_layout(names, src.name))
             self._rec(pid, _manifest_findings(ident.fmt, root, names))
+            if ident.fmt == "apk" and root is not None and (root / "AndroidManifest.xml").is_file():
+                self._rec(pid, android.manifest_findings((root / "AndroidManifest.xml").read_bytes()))
+        if ident.fmt == "msi":
+            ctx.progress(15, "Reading MSI database")
+            self._rec(pid, msi.analyze(src))
 
         # -------- choose analysis subjects
         subjects: list[tuple[Path, str, str]] = []
@@ -158,6 +164,28 @@ class Orchestrator:
                     self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "ok")
                 except Exception as e:  # noqa: BLE001
                     self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "error", str(e))
+                if fm == "pe" and dotnet.is_dotnet(p):
+                    self._rec(pid, dotnet.analyze(p, rel))
+                    fm = "dotnet"
+                pyi = None
+                try:
+                    pyi = pyinstaller.find_archive(p)
+                except UnsafeInput as e:
+                    self._rec(pid, [Finding("pyinstaller", "reforge.pyinstaller", "error", "archive_invalid", str(e),
+                                            subject=rel)])
+                if pyi is not None:
+                    self._rec(pid, pyinstaller.findings(pyi, rel))
+                    dest = work / "pyinstaller" / f"{i:03d}"
+                    shutil.rmtree(dest, ignore_errors=True)
+                    files = pyinstaller.extract(pyi, dest, self.limits)
+                    self._rec(pid, [Finding("pyinstaller", "reforge.pyinstaller", "extraction", "extracted",
+                                            {"files": len(files), "dir": str(dest)}, provenance=Provenance.EXTRACTED,
+                                            subject=rel)])
+                    for e in pyi.entries:
+                        if e.typ == "s" and pyinstaller.is_user_script(e.name):
+                            subjects.append((dest / f"{e.name}.pyc", f"{rel}::{e.name}.pyc", "pyc"))
+            if fm == "dex" and not quick:
+                self._rec(pid, android.dex_findings(p, rel))
             ctx.check()
             if not quick:
                 self._rec(pid, strings.analyze(p, rel))
@@ -169,6 +197,18 @@ class Orchestrator:
                 ctx.progress(base, f"{a.tool}: {rel}")
                 t = time.time()
                 status, fs, res = adapters.run_adapter(a, p, rel, self.limits.tool_timeout_s)
+                tools_run[status] += 1
+                self._rec(pid, fs)
+                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else "(not installed)", t, status,
+                                     res.stderr[-500:] if res and not res.ok else "")
+
+        # container-level engines (decompile the whole package, e.g. JADX on an APK)
+        if src.is_file() and ident.fmt in CONTAINER_TOOL_FORMATS:
+            for a in adapters.applicable(ident.fmt, profile):
+                ctx.check()
+                ctx.progress(90, f"{a.tool}: {src.name}")
+                t = time.time()
+                status, fs, res = adapters.run_adapter(a, src, src.name, self.limits.tool_timeout_s)
                 tools_run[status] += 1
                 self._rec(pid, fs)
                 self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else "(not installed)", t, status,
@@ -205,8 +245,9 @@ def _manifest_findings(fmt: str, root: Path | None, names: list[str]) -> list[Fi
                            {"dex": [n for n in names if n.endswith(".dex")],
                             "native_abis": sorted({n.split("/")[1] for n in names if n.startswith("lib/") and n.count("/") >= 2})},
                            Confidence.CONFIRMED, subject="APK"))
-        out.append(Finding("extract", "reforge.extract", "limitation", "binary_xml_manifest",
-                           "AndroidManifest.xml is binary AXML; decoding requires Androguard/Apktool/JADX (tool pack)",
+    if fmt == "aab":
+        out.append(Finding("extract", "reforge.extract", "limitation", "aab_manifest",
+                           "AAB manifests are protobuf (not binary XML); decoding not implemented yet",
                            Confidence.CONFIRMED))
     return out
 

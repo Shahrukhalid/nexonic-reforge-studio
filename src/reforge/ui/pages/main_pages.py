@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -81,7 +82,10 @@ class DashboardPage(Page):
         self.root.addLayout(grid)
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["Name", "Format / SHA-256", "Profile", "Status", "Updated"])
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        hh = self.table.horizontalHeader()
+        for c in (0, 2, 3, 4):
+            hh.setSectionResizeMode(c, QHeaderView.ResizeToContents)
+        hh.setSectionResizeMode(1, QHeaderView.Stretch)
         self.table.verticalHeader().hide()
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.cellDoubleClicked.connect(self._open)
@@ -213,11 +217,38 @@ class ImportPage(Page):
             QMessageBox.warning(self, "Import", "Path does not exist.")
             return
         prof = PROFILES[self.profile.currentIndex()]
+        existing = self._existing(p)
+        if existing:
+            ans = QMessageBox.question(
+                self, "Already analysed",
+                f"Project #{existing['id']} ({existing['name']}) analysed this same input before.\n\n"
+                "Yes: re-run that project with the selected profile.\nNo: create a new project.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            if ans == QMessageBox.Cancel:
+                return
+            if ans == QMessageBox.Yes:
+                self.ctx.db.update_project(existing["id"], profile=prof)
+                self._pid = existing["id"]
+                self._task = self.ctx.start_analysis(self._pid)
+                self.go.setEnabled(False)
+                self.cancel.setEnabled(True)
+                self.bar.setValue(0)
+                return
         self._pid = self.ctx.db.create_project(p.name, str(p.resolve()), prof)
         self._task = self.ctx.start_analysis(self._pid)
         self.go.setEnabled(False)
         self.cancel.setEnabled(True)
         self.bar.setValue(0)
+
+    def _existing(self, p: Path) -> dict | None:
+        """Same file (SHA-256) or same bundle path analysed before."""
+        rp = str(p.resolve())
+        projs = self.ctx.db.projects()
+        if p.is_file():
+            from ...analysis.identify import file_hashes
+            sha = file_hashes(p)["sha256"]
+            return next((x for x in projs if x["sha256"] == sha), None)
+        return next((x for x in projs if x["input_path"] == rp), None)
 
     def _cancel(self):
         if self._task:
@@ -370,8 +401,13 @@ class AnalysisPage(Page):
         if isinstance(v, dict) and "lines" in v:
             body = f"; {v.get('arch')} @ {v.get('address')}\n" + "\n".join(v["lines"])
         elif isinstance(v, dict) and "code" in v:
-            body = ("// DECOMPILED REPRESENTATION - not original source code\n"
-                    f"// {v.get('signature', '')}  @ {v.get('entry', '')}\n\n" + v["code"])
+            if r["provenance"] == "decompiled":
+                head_c = "// DECOMPILED REPRESENTATION - not original source code\n"
+                if v.get("signature") or v.get("entry"):
+                    head_c += f"// {v.get('signature', '')}  @ {v.get('entry', '')}\n"
+            else:
+                head_c = f"<!-- decoded from the file's own structure ({r['provenance']}) -->\n"
+            body = head_c + "\n" + v["code"]
         else:
             body = json.dumps(v, indent=2, default=str)
         self.detail.setPlainText(head + body)
@@ -418,6 +454,7 @@ class ToolsPage(Page):
         top.addWidget(self.filter, 1)
         top.addWidget(b)
         self.root.addLayout(top)
+        self.root.addWidget(self._setup_panel())
         self.root.addWidget(self.summary)
         cols = ["#", "Tool", "Category", "Status", "Version / location", "Platforms", "License", "Integration",
                 "Verification", "Notes"]
@@ -429,7 +466,94 @@ class ToolsPage(Page):
         self.table.setAlternatingRowColors(True)
         self.root.addWidget(self.table, 1)
 
+    # ---- tool packs / Ghidra setup ------------------------------------------
+    def _setup_panel(self) -> QFrame:
+        f = QFrame()
+        f.setObjectName("Card")
+        lay = QVBoxLayout(f)
+        lay.setContentsMargins(16, 12, 16, 12)
+        head = QHBoxLayout()
+        t = QLabel("Ghidra 12.2 tool pack")
+        t.setStyleSheet("font-weight:600")
+        head.addWidget(t)
+        head.addStretch(1)
+        self.b_install = QPushButton("Install (≈550 MB, SHA-256 verified)")
+        self.b_install.setObjectName("Primary")
+        self.b_install.clicked.connect(self._install_ghidra)
+        self.b_build = QPushButton("Build decompiler")
+        self.b_build.clicked.connect(self._build_natives)
+        head.addWidget(self.b_install)
+        head.addWidget(self.b_build)
+        lay.addLayout(head)
+        self.setup_status = QLabel("")
+        self.setup_status.setObjectName("Muted")
+        self.setup_status.setWordWrap(True)
+        self.setup_status.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lay.addWidget(self.setup_status)
+        self.setup_bar = QProgressBar()
+        self.setup_bar.hide()
+        lay.addWidget(self.setup_bar)
+        self._setup_task = None
+        self.ctx.bridge.progress.connect(self._setup_progress)
+        self.ctx.bridge.done.connect(self._setup_done)
+        return f
+
+    def _refresh_setup(self):
+        from ...tools.setup import ghidra_status
+        s = ghidra_status()
+        parts = [("Ghidra: installed" if s["installed"] else "Ghidra: not installed"),
+                 (f"JDK {s['java_required']}+: {s['java']}" if s["java"] else
+                  f"JDK {s['java_required']}+: MISSING (macOS: brew install openjdk@{s['java_required']})")]
+        if s["installed"]:
+            parts.append(f"decompiler ({s['platform']}): " + ("OK" if s["decompiler"] else "missing - click Build decompiler"))
+        self.setup_status.setText("   ·   ".join(parts))
+        busy = self._setup_task is not None
+        self.b_install.setEnabled(not busy and not s["installed"])
+        self.b_build.setEnabled(not busy and s["installed"] and not s["decompiler"] and bool(s["java"]))
+
+    def _install_ghidra(self):
+        from ...tools import toolpacks
+        self.setup_bar.setRange(0, 100)
+        self.setup_bar.show()
+
+        def job(tctx):
+            def prog(done, total):
+                tctx.progress(int(done * 100 / total) if total else 0, f"Downloading Ghidra {done >> 20} MB")
+            return str(toolpacks.install("ghidra", prog))
+        self._setup_task = self.ctx.tasks.submit(
+            job, on_progress=lambda p, m: self.ctx.bridge.progress.emit(self._setup_task or "", p, m),
+            on_done=lambda t, s, r: self.ctx.bridge.done.emit(t, s, r))
+        self._refresh_setup()
+
+    def _build_natives(self):
+        from ...tools.setup import build_ghidra_natives
+        self.setup_bar.setRange(0, 0)       # indeterminate
+        self.setup_bar.show()
+        log = logging.getLogger("reforge.setup")
+        self._setup_task = self.ctx.tasks.submit(
+            lambda tctx: build_ghidra_natives(log.info),
+            on_done=lambda t, s, r: self.ctx.bridge.done.emit(t, s, r))
+        self.setup_status.setText("Building Ghidra decompiler… (progress in Activity & Logs)")
+        self.b_build.setEnabled(False)
+
+    def _setup_progress(self, tid, pct, msg):
+        if tid and tid == self._setup_task:
+            self.setup_bar.setValue(pct)
+            self.setup_status.setText(msg)
+
+    def _setup_done(self, tid, status, result):
+        if tid != self._setup_task:
+            return
+        self._setup_task = None
+        self.setup_bar.hide()
+        ok = status == "done" and result not in (False, None)
+        self.ctx.status("Tool setup " + ("finished" if ok else f"failed: {result}"))
+        from ...tools import jdk
+        jdk.find_jdk.cache_clear()
+        self.refresh()
+
     def refresh(self):
+        self._refresh_setup()
         sts = registry.all_status()
         self.table.setSortingEnabled(False)
         self.table.setRowCount(len(sts))
@@ -444,6 +568,9 @@ class ToolsPage(Page):
                 it.setToolTip(e["repo"])
                 self.table.setItem(r, c, it)
         self.table.setSortingEnabled(True)
+        if not getattr(self, "_sorted_once", False):
+            self.table.sortItems(0, Qt.AscendingOrder)
+            self._sorted_once = True
         self.table.resizeColumnsToContents()
         self.summary.setText("  ·  ".join(f"{k}: {v}" for k, v in sorted(registry.summary().items())))
         self._filter(self.filter.text())
