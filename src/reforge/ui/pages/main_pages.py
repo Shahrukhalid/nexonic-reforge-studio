@@ -83,9 +83,10 @@ class DashboardPage(Page):
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["Name", "Format / SHA-256", "Profile", "Status", "Updated"])
         hh = self.table.horizontalHeader()
-        for c in (0, 2, 3, 4):
+        for c in range(5):
             hh.setSectionResizeMode(c, QHeaderView.ResizeToContents)
-        hh.setSectionResizeMode(1, QHeaderView.Stretch)
+        hh.setStretchLastSection(True)          # spare width goes to "Updated", never pushes columns off-screen
+        self.table.setTextElideMode(Qt.ElideMiddle)
         self.table.verticalHeader().hide()
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.cellDoubleClicked.connect(self._open)

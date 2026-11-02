@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"{APP_NAME} {__version__}")
-        self.resize(1320, 840)
+        self._fit_to_screen()
         self.ctx = AppContext(self)
         handler = QtLogHandler(self.ctx.bridge)
         logging.getLogger("reforge").addHandler(handler)
@@ -145,6 +145,17 @@ class MainWindow(QMainWindow):
         self.nav.currentRowChanged.connect(self._switch)
         self.nav.setCurrentRow(0)
         self.statusBar().showMessage("Ready — static analysis only; imported files are never executed.")
+
+    def _fit_to_screen(self):
+        """Open at most 90% of the available screen, centred (never larger than the display)."""
+        scr = QApplication.primaryScreen()
+        if scr is None:
+            self.resize(1320, 840)
+            return
+        g = scr.availableGeometry()
+        w, h = min(1320, int(g.width() * 0.9)), min(840, int(g.height() * 0.9))
+        self.resize(w, h)
+        self.move(g.x() + (g.width() - w) // 2, g.y() + (g.height() - h) // 2)
 
     def _add(self, page):
         self.pages[page.title] = page

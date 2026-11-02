@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.1] - 2026-11-03
+### Fixed
+- Window opens sized to the screen (max 90%), centred; dashboard columns size to content and never push Profile/Status/Updated off-screen
+
 ## [0.3.0] - 2026-11-02
 ### Added
 - Android: native binary-XML (AXML) manifest decoder - package, versions, SDK levels, permissions,

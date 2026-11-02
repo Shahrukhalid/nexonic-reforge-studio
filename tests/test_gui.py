@@ -42,3 +42,22 @@ def test_tool_setup_panel_and_duplicate_detection(qtbot, samples):
     assert imp._existing(samples["asar"])["id"] == pid          # same SHA-256 -> offered for re-run
     assert imp._existing(samples["jar"]) is None
     w.close()
+
+
+def test_dashboard_columns_fit_window(qtbot, samples):
+    from reforge.analysis.orchestrator import Orchestrator
+    from reforge.ui.main_window import MainWindow
+    w = MainWindow()
+    qtbot.addWidget(w)
+    w.resize(1000, 700)
+    w.show()
+    pid = w.ctx.db.create_project("Chess", str(samples["native"]), "deep")
+    Orchestrator(w.ctx.db).analyze(pid)
+    d = w.pages["Dashboard"]
+    w.show_page("Dashboard")
+    qtbot.wait(50)
+    hh = d.table.horizontalHeader()
+    right = hh.sectionViewportPosition(4) + hh.sectionSize(4)
+    assert hh.sectionViewportPosition(4) < d.table.viewport().width()      # "Updated" column is visible
+    assert right <= d.table.viewport().width() + 2
+    w.close()
