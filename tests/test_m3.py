@@ -164,6 +164,10 @@ def test_decompiler_native_path_and_hint(tmp_path):
     exe = tmp_path / "support" / "analyzeHeadless"
     p = ghidra.decompiler_native(str(exe))
     assert p.parent.name == ghidra.native_platform() and p.parts[-4:-2] == ("Decompiler", "os")
+    built = tmp_path / "Ghidra/Features/Decompiler/build/os" / ghidra.native_platform() / p.name
+    built.parent.mkdir(parents=True)
+    built.write_text("x")
+    assert ghidra.decompiler_native(str(exe)) == built      # user-built binary is preferred
     data = {"functions": [], "decompiler": {"opened": False, "open_error": "Could not find decompiler executable",
                                             "requested": 3, "succeeded": 0, "errors": []}}
     st = next(f for f in ghidra.parse_export(data, "x") if f.key == "decompiler_status")

@@ -5,6 +5,7 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -68,17 +69,27 @@ def main(argv: list[str] | None = None) -> int:
             if not gx:
                 ap.error("Ghidra is not installed: reforge-cli toolpack install ghidra")
             root = ghidra_root(gx)
-            script = root / "support" / ("buildNatives.bat" if os.name == "nt" else "buildNatives")
-            if not script.is_file():
-                print(f"not found: {script}")
+            gdir = root / "support" / "gradle"           # Ghidra 12.x: GettingStarted "Building Native Components"
+            wrapper = gdir / ("gradlew.bat" if os.name == "nt" else "gradlew")
+            if not gdir.is_dir():
+                print(f"not found: {gdir}")
                 return 1
             found = jdk.find_jdk(required_java(gx))
             if not found:
                 print("JDK missing - see: reforge-cli doctor")
                 return 1
-            print(f"Building Ghidra native components in {root} (Ghidra's own script; takes a few minutes)...")
+            if shutil.which("gradle"):
+                cmd = ["gradle", "buildNatives"]
+            elif wrapper.is_file():
+                cmd = [str(wrapper)] if os.name == "nt" else ["sh", str(wrapper), "buildNatives"]
+                if os.name == "nt":
+                    cmd.append("buildNatives")
+            else:
+                print("Neither 'gradle' nor Ghidra's gradlew wrapper found; install Gradle 9.1+")
+                return 1
+            print(f"Building Ghidra native components ({' '.join(cmd[-2:])} in {gdir}); takes a few minutes...")
             env = {**os.environ, **jdk.env_for(found[0])}
-            rc = subprocess.call([str(script)], cwd=str(root / "support"), env=env)
+            rc = subprocess.call(cmd, cwd=str(gdir), env=env)
             ok = decompiler_native(gx).is_file()
             print("decompiler:", "OK " + str(decompiler_native(gx)) if ok else "still missing (see output above)")
             return 0 if ok else (rc or 1)

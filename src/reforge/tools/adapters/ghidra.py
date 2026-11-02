@@ -100,14 +100,18 @@ def native_platform() -> str:
 
 
 def decompiler_native(exe: str) -> Path:
-    """Where Ghidra expects its native decompiler for this host. Official zips ship only linux_x86_64 and
-    win_x86_64; other hosts (e.g. macOS) must build it once with support/buildNatives."""
+    """The native decompiler Ghidra will use on this host. Official zips ship only linux_x86_64 and
+    win_x86_64; other hosts (e.g. macOS) build it once (support/gradle: gradlew buildNatives), which
+    writes build/os/<platform>/ - preferred by Ghidra over the prebuilt os/<platform>/."""
     name = "decompile.exe" if native_platform().startswith("win") else "decompile"
-    return ghidra_root(exe) / "Ghidra" / "Features" / "Decompiler" / "os" / native_platform() / name
+    mod = ghidra_root(exe) / "Ghidra" / "Features" / "Decompiler"
+    built = mod / "build" / "os" / native_platform() / name
+    return built if built.is_file() else mod / "os" / native_platform() / name
 
 
 BUILD_HINT = ("Ghidra's release has no prebuilt decompiler for this platform. Build it once with: "
-              "reforge-cli toolpack build-natives ghidra  (macOS needs Xcode Command Line Tools)")
+              "reforge-cli toolpack build-natives ghidra  (needs Xcode Command Line Tools on macOS and an "
+              "Internet connection for Ghidra's Gradle wrapper)")
 
 
 def required_java(exe: str) -> int:
