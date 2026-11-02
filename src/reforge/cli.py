@@ -23,11 +23,23 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--report")
     t = sub.add_parser("tools")
     t.add_argument("--json", action="store_true")
+    sub.add_parser("doctor", help="check JDK, tool packs and external engines on this machine")
     tp = sub.add_parser("toolpack", help="install/list verified tool packs")
     tp.add_argument("action", choices=["list", "install", "uninstall"])
     tp.add_argument("pack", nargs="?")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
+    if args.cmd == "doctor":
+        from .tools import jdk, toolpacks
+        j = jdk.find_jdk(21)
+        print(f"JDK 21+        : {'OK  ' + str(j[1]) + '  ' + str(j[0]) if j else 'MISSING (needed for Ghidra)'}")
+        for pid, spec in toolpacks.packs().items():
+            print(f"pack {pid:<9} : {'installed' if toolpacks.is_installed(pid) else 'not installed'} ({spec['version']})")
+        for s in registry.all_status():
+            if s.available:
+                print(f"tool           : {s.entry['name']:<28} {s.version or s.location or ''}")
+        return 0
 
     if args.cmd == "toolpack":
         from .tools import toolpacks

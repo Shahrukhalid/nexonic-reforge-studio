@@ -126,3 +126,42 @@ def test_tool_table_numeric_sort(qtbot):
     ids = [int(t.table.item(r, 0).text()) for r in range(t.table.rowCount())]
     assert ids == sorted(ids) and ids[0] == 1 and ids[-1] == 85
     w.close()
+
+
+def test_jdk_version_parsing(tmp_path, monkeypatch):
+    import os
+    if os.name == "nt":
+        pytest.skip("shell-script fake java")
+    from reforge.tools import jdk
+    for ver, major in (('1.8.0_152', 8), ('21.0.13', 21), ('25', 25)):
+        home = tmp_path / ver / "bin"
+        home.mkdir(parents=True)
+        j = home / "java"
+        j.write_text(f'#!/bin/sh\necho \'openjdk version "{ver}" 2026-10-21\' >&2\n')
+        j.chmod(0o755)
+        assert jdk.java_major(j) == major
+    jdk.find_jdk.cache_clear()
+    monkeypatch.setenv("JAVA_HOME", str(tmp_path / "1.8.0_152"))
+    monkeypatch.setattr(jdk, "_candidates", lambda: [tmp_path / "1.8.0_152", tmp_path / "21.0.13"])
+    assert jdk.find_jdk(21) == (tmp_path / "21.0.13", 21)   # Java 8 is skipped
+    jdk.find_jdk.cache_clear()
+
+
+def test_ghidra_reports_missing_jdk(monkeypatch, samples):
+    from reforge.tools import jdk
+    monkeypatch.setattr(jdk, "find_jdk", lambda m=21: None)
+    status, fs, _ = ghidra.run_ghidra("analyzeHeadless", samples["native"], "x", 60)
+    assert status == "error" and "JDK 21" in fs[0].value["error"]
+
+
+def test_thin_universal_macho(tmp_path, samples):
+    from reforge.analysis import identify
+    if identify.identify(samples["native"]).fmt != "macho-fat":
+        pytest.skip("host executable is not a universal binary")
+    out, arch = ghidra.thin_macho(samples["native"], tmp_path)
+    assert identify.identify(out).fmt == "macho" and arch in ("ARM64", "X86_64")
+
+
+def test_tls_context_uses_ca_bundle():
+    ctx = toolpacks._tls()
+    assert ctx.verify_mode.name == "CERT_REQUIRED" and ctx.cert_store_stats()["x509_ca"] > 50

@@ -59,10 +59,11 @@ class ToolResult:
 
 
 def run_tool(argv: list[str], timeout: int = 300, max_output: int = 32 * 1024**2,
-             cwd: str | os.PathLike | None = None) -> ToolResult:
+             cwd: str | os.PathLike | None = None, extra_env: dict[str, str] | None = None) -> ToolResult:
     """Run an *analysis tool* (never the target) with no shell, a timeout and an output cap."""
     t0 = time.time()
     env = {k: v for k, v in os.environ.items() if not k.upper().endswith(("_API_KEY", "_TOKEN", "_SECRET"))}
+    env.update(extra_env or {})
     try:
         proc = subprocess.run(argv, capture_output=True, timeout=timeout, cwd=cwd, env=env,
                               stdin=subprocess.DEVNULL, shell=False)

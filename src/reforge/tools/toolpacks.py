@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import shutil
+import ssl
 import tempfile
 import urllib.request
 from collections.abc import Callable
@@ -67,10 +68,19 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _tls() -> ssl.SSLContext:
+    """Verified TLS using certifi's CA bundle (works even when the OS Python has no CA store)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
 def download(url: str, dest: Path, progress: Callable[[int, int], None] | None = None) -> None:
     if not url.startswith(("https://", "file://")):
         raise UnsafeInput("tool packs must be downloaded over HTTPS")
-    with urllib.request.urlopen(url, timeout=60) as r, open(dest, "wb") as f:  # noqa: S310 (scheme checked)
+    with urllib.request.urlopen(url, timeout=60, context=_tls()) as r, open(dest, "wb") as f:  # noqa: S310
         total = int(r.headers.get("Content-Length") or 0)
         done = 0
         while chunk := r.read(1 << 20):

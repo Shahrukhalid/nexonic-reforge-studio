@@ -9,8 +9,11 @@ import json
 import tempfile
 from pathlib import Path
 
+import lief
+
 from ...core.findings import Confidence, Finding, Provenance
 from ...core.safety import ToolResult, run_tool
+from .. import jdk
 
 STAGE = "tools"
 SCRIPT_DIR = Path(__file__).resolve().parents[1] / "ghidra_scripts"
@@ -50,21 +53,52 @@ def parse_export(data: dict, rel: str) -> list[Finding]:
     return out
 
 
-def run_ghidra(exe: str, target: Path, rel: str, timeout: int) -> tuple[str, list[Finding], ToolResult]:
+PREFERRED_SLICES = ("ARM64", "X86_64")
+
+
+def thin_macho(target: Path, out_dir: Path) -> tuple[Path, str] | None:
+    """Write one slice of a universal Mach-O as a thin binary (preferring arm64). None if not fat."""
+    fat = lief.MachO.parse(str(target))
+    if fat is None or fat.size < 2:
+        return None
+    slices = list(fat)
+    names = [str(b.header.cpu_type).split(".")[-1] for b in slices]
+    idx = next((names.index(p) for p in PREFERRED_SLICES if p in names), 0)
+    out = out_dir / f"{target.name}.{names[idx].lower()}"
+    slices[idx].write(str(out))
+    return out, names[idx]
+
+
+def _err(rel: str, msg: str, res: ToolResult | None = None) -> tuple[str, list[Finding], ToolResult | None]:
+    v = {"error": msg}
+    if res is not None:
+        v |= {"rc": res.returncode, "timed_out": res.timed_out, "log_tail": (res.stderr or res.stdout)[-3000:]}
+    return "error", [Finding(STAGE, "ghidra", "tool_error", "ghidra", v, Confidence.CONFIRMED, subject=rel)], res
+
+
+def run_ghidra(exe: str, target: Path, rel: str, timeout: int) -> tuple[str, list[Finding], ToolResult | None]:
+    found = jdk.find_jdk(21)
+    if found is None:
+        return _err(rel, "Ghidra needs JDK 21 or newer; none found (checked JAVA_HOME, java_home, Homebrew, "
+                         "standard JDK folders, PATH)")
+    home, major = found
     with tempfile.TemporaryDirectory(prefix="reforge-ghidra-") as tmp:
+        target = Path(target)
+        notes = {"jdk": f"{major} ({home})"}
+        thin = thin_macho(target, Path(tmp)) if lief.is_macho(str(target)) else None
+        if thin:
+            target, notes["slice"] = thin
         proj = Path(tmp) / "proj"
         proj.mkdir()
         out_json = Path(tmp) / "export.json"
-        res = run_tool(build_argv(exe, Path(target), proj, out_json, timeout), timeout=timeout,
-                       max_output=4 * 1024**2)
+        res = run_tool(build_argv(exe, target, proj, out_json, timeout), timeout=timeout,
+                       max_output=4 * 1024**2, extra_env=jdk.env_for(home))
         if out_json.is_file() and out_json.stat().st_size:
             try:
                 data = json.loads(out_json.read_text(encoding="utf-8", errors="replace"))
-                return "ok", parse_export(data, rel), res
             except json.JSONDecodeError as e:
-                err = f"export JSON invalid: {e}"
-        else:
-            err = "Ghidra produced no export (see stderr)"
-        tail = (res.stderr or res.stdout)[-3000:]
-        return "error", [Finding(STAGE, "ghidra", "tool_error", "ghidra", {"error": err, "rc": res.returncode,
-                         "timed_out": res.timed_out, "log_tail": tail}, Confidence.CONFIRMED, subject=rel)], res
+                return _err(rel, f"export JSON invalid: {e}", res)
+            fs = parse_export(data, rel)
+            fs[0].value |= notes
+            return "ok", fs, res
+        return _err(rel, "Ghidra produced no export (see log_tail)", res)

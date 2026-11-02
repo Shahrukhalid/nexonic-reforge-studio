@@ -13,6 +13,7 @@ dependencies = [
   "PySide6==6.12.0",
   "lief==1.0.0",
   "capstone==5.0.8",
+  "certifi==2026.10.23",
 ]
 
 [project.optional-dependencies]

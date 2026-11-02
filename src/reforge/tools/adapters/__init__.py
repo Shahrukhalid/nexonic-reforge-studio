@@ -76,7 +76,7 @@ ADAPTERS: list[Adapter] = [
 
 from .ghidra import run_ghidra  # noqa: E402
 
-ADAPTERS.append(Adapter("Ghidra", {"elf", "pe", "macho"}, {"deep"}, argv=lambda exe, t: [], timeout=1800,
+ADAPTERS.append(Adapter("Ghidra", {"elf", "pe", "macho", "macho-fat"}, {"deep"}, argv=lambda exe, t: [], timeout=1800,
                         max_subjects=1, runner=run_ghidra))
 
 
