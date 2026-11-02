@@ -98,9 +98,17 @@ class DashboardPage(Page):
         self.table.setRowCount(len(projs))
         self._ids = [p["id"] for p in projs]
         for r, p in enumerate(projs):
-            vals = [p["name"], (p["sha256"] or "")[:16], p["profile"], p["status"], _ts(p["updated"])]
+            fmt = self.ctx.db.findings(p["id"], stage="identify", kind="format")
+            desc = fmt[0]["value"].get("description", "") if fmt else "—"
+            sha = (p["sha256"] or "")[:16]
+            vals = [p["name"], f"{desc}  ·  {sha}…" if sha else f"{desc}  ·  (bundle: per-file hashes in workspace)",
+                    p["profile"], p["status"], _ts(p["updated"])]
             for c, v in enumerate(vals):
-                self.table.setItem(r, c, _ro(v))
+                it = _ro(v)
+                if c == 1 and p["sha256"]:
+                    it.setToolTip(p["sha256"])
+                self.table.setItem(r, c, it)
+        self.table.resizeColumnToContents(4)
 
     def _open(self, row, _col):
         self.ctx.open_project(self._ids[row])
