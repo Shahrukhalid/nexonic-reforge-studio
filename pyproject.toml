@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexonic-reforge-studio"
+version = "0.1.0"
+description = "Nexonic ReForge Studio - automated software analysis and clean-room reimplementation workbench"
+authors = [{ name = "Nexonic Technologies" }]
+license = { text = "Proprietary (private development)" }
+requires-python = ">=3.11"
+dependencies = [
+  "PySide6==6.12.0",
+  "lief==1.0.0",
+]
+
+[project.optional-dependencies]
+analysis = ["capstone>=5.0", "yara-x>=0.10"]
+dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6", "pyinstaller>=6.10"]
+
+[project.scripts]
+reforge = "reforge.__main__:main"
+reforge-cli = "reforge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+reforge = ["tools/registry.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+
+[tool.ruff]
+line-length = 110
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S102", "S307", "S602", "S604", "S605"]
+ignore = ["B008", "E501", "UP042"]

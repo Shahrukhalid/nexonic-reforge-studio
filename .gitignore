@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.venv/
+.env
+*.sqlite3
+*.p12
+*.pfx
+*.cer
+*.key
+*.mobileprovision
+# analysis inputs / outputs must never be committed
+samples/private/
+projects/
