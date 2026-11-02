@@ -24,8 +24,10 @@ class Adapter:
     formats: set[str]                           # identify() formats it applies to
     profiles: set[str]                          # quick / standard / deep
     argv: Callable[[str, Path], list[str]]      # (exe, target) -> argv
-    parse: Callable[[ToolResult, str], list[Finding]]
+    parse: Callable[[ToolResult, str], list[Finding]] | None = None
     timeout: int = 300
+    max_subjects: int | None = None             # cap per analysis (expensive engines)
+    runner: Callable | None = None              # (exe, target, rel, timeout) -> (status, findings, ToolResult)
 
 
 def _json_or_text(res: ToolResult, tool: str, key: str, rel: str) -> list[Finding]:
@@ -72,13 +74,23 @@ ADAPTERS: list[Adapter] = [
 ]
 
 
+from .ghidra import run_ghidra  # noqa: E402
+
+ADAPTERS.append(Adapter("Ghidra", {"elf", "pe", "macho"}, {"deep"}, argv=lambda exe, t: [], timeout=1800,
+                        max_subjects=1, runner=run_ghidra))
+
+
 def applicable(fmt: str, profile: str) -> list[Adapter]:
     return [a for a in ADAPTERS if fmt in a.formats and profile in a.profiles]
 
 
-def run_adapter(a: Adapter, target: Path, rel: str) -> tuple[str, list[Finding], ToolResult | None]:
+def run_adapter(a: Adapter, target: Path, rel: str, timeout: int | None = None
+                ) -> tuple[str, list[Finding], ToolResult | None]:
     exe = registry.find_exe(a.tool)
     if not exe:
         return "skipped", [], None
-    res = run_tool(a.argv(exe, target), timeout=a.timeout)
+    t = max(a.timeout, timeout or 0)
+    if a.runner:
+        return a.runner(exe, target, rel, t)
+    res = run_tool(a.argv(exe, target), timeout=t)
     return ("ok" if res.ok else "error"), a.parse(res, rel), res

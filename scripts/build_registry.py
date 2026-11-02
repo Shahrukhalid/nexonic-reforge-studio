@@ -17,7 +17,7 @@ L = ["linux"]
 # integration: python-lib | cli-adapter | external-app | plugin-host | reference-only | paid-host
 # detect: "bin:<exe>[|<exe>]" or "py:<module>" or "" (manual / not detectable)
 C = [
- (1, "Ghidra", "NationalSecurityAgency/ghidra", "core", "gui", ALL, "Apache-2.0", "cli-adapter", "bin:analyzeHeadless|ghidraRun", 1, "Headless analyzer via analyzeHeadless; requires JDK 21+"),
+ (1, "Ghidra", "NationalSecurityAgency/ghidra", "core", "gui", ALL, "Apache-2.0", "cli-adapter", "bin:analyzeHeadless", 1, "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 21+. Tool pack: ghidra"),
  (2, "radare2", "radareorg/radare2", "core", "cli", ALL, "LGPL-3.0", "cli-adapter", "bin:rabin2|r2", 1, ""),
  (3, "Frida", "frida/frida", "core", "library", ALL, "wxWindows-3.1", "python-lib", "py:frida", 2, "Dynamic instrumentation: only inside an approved isolated runtime"),
  (4, "x64dbg", "x64dbg/x64dbg", "core", "gui", W, "GPL-3.0", "external-app", "bin:x64dbg|x96dbg", 3, "Windows-only GUI debugger; launched externally"),
@@ -66,9 +66,9 @@ C = [
  (47, "Il2CppDumper", "Perfare/Il2CppDumper", "unpack", "cli", ALL, "MIT", "cli-adapter", "bin:Il2CppDumper", 2, ".NET; archived/low activity - Cpp2IL preferred"),
  (48, "Cpp2IL", "SamboyCoding/Cpp2IL", "unpack", "cli", ALL, "MIT", "cli-adapter", "bin:Cpp2IL", 2, ""),
  (49, "AssetRipper", "AssetRipper/AssetRipper", "games", "gui", ALL, "GPL-3.0", "external-app", "bin:AssetRipper.GUI.Free", 3, "Only for assets the user is authorized to extract"),
- (50, "UEViewer (umodel)", "gildor2/UEViewer", "games", "cli", ["windows", "linux"], "custom", "external-app", "bin:umodel", 4, "Custom licence; not redistributable by default"),
+ (50, "UEViewer (umodel)", "gildor2/UEViewer", "games", "cli", ["windows", "linux"], "custom", "external-app", "bin:umodel", 4, "GitHub detects MIT, but the README states its own terms - review before bundling"),
  (51, "FModel", "4sval/FModel", "games", "gui", W, "GPL-3.0", "external-app", "", 4, "Windows-only"),
- (52, "r2unity", "radareorg/r2unity", "games", "plugin", ALL, "unknown", "plugin-host", "", 5, "Likely unmaintained - verify"),
+ (52, "r2unity", "radareorg/r2unity", "games", "plugin", ALL, "unknown", "plugin-host", "", 5, "radare2 plugin for Unity metadata"),
  (53, "Unity game hacking resources", "imadr/Unity-game-hacking", "games", "resource", ALL, "n/a", "reference-only", "", 5, "Documentation list, not an executable tool"),
  (54, "mitmproxy", "mitmproxy/mitmproxy", "network", "cli", ALL, "MIT", "cli-adapter", "bin:mitmdump", 3, "Only with user consent in an isolated runtime"),
  (55, "mitmproxy2swagger", "alufers/mitmproxy2swagger", "network", "cli", ALL, "MIT", "cli-adapter", "bin:mitmproxy2swagger", 3, "Builds OpenAPI from captured flows"),
@@ -112,5 +112,17 @@ for (i, name, repo, cat, kind, plats, lic, integ, det, prio, notes) in C:
                 "last_push": None})
 assert len(out) == 85 and len({o["repo"] for o in out}) == 85
 dst = Path(__file__).resolve().parents[1] / "src" / "reforge" / "tools" / "registry.json"
+KEEP = ("verification", "maintained", "archived", "last_push", "verified_at", "canonical_repo",
+        "license_note", "verification_error")
+if dst.exists():
+    old = {o["id"]: o for o in json.loads(dst.read_text())}
+    for o in out:
+        prev = old.get(o["id"])
+        if prev and prev.get("repo") == o["repo"] and prev.get("verification") != "pending":
+            for k in KEEP:
+                if k in prev:
+                    o[k] = prev[k]
+            if "license_note" in prev:
+                o["license"] = prev["license"]
 dst.write_text(json.dumps(out, indent=1) + "\n")
 print(f"wrote {len(out)} entries -> {dst}")

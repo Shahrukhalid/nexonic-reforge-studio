@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexonic-reforge-studio"
-version = "0.1.0"
+version = "0.2.0"
 description = "Nexonic ReForge Studio - automated software analysis and clean-room reimplementation workbench"
 authors = [{ name = "Nexonic Technologies" }]
 license = { text = "Proprietary (private development)" }
@@ -12,10 +12,11 @@ requires-python = ">=3.11"
 dependencies = [
   "PySide6==6.12.0",
   "lief==1.0.0",
+  "capstone==5.0.6",
 ]
 
 [project.optional-dependencies]
-analysis = ["capstone>=5.0", "yara-x>=0.10"]
+analysis = ["yara-x>=0.10"]
 dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6", "pyinstaller>=6.10"]
 
 [project.scripts]
@@ -26,7 +27,7 @@ reforge-cli = "reforge.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-reforge = ["tools/registry.json"]
+reforge = ["tools/registry.json", "tools/packs.json", "tools/ghidra_scripts/*.java"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

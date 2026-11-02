@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.metadata
 import importlib.util
 import json
+import os
 import shutil
 import sys
 from dataclasses import dataclass
@@ -25,8 +26,18 @@ S_DEPRECATED = "Deprecated or unmaintained"
 S_PENDING = "Installation pending"
 S_FAILED = "Verification failed"
 
-BUNDLED_PY = {"lief"}            # shipped inside the installer
+BUNDLED_PY = {"lief", "capstone"}            # shipped inside the installer
 BUILTIN = {"builtin"}            # implemented natively by ReForge
+
+
+def _which(exe: str) -> str | None:
+    from . import toolpacks  # local import: avoids an import cycle at module load
+    extra = toolpacks.bin_dirs()
+    if extra:
+        found = shutil.which(exe, path=os.pathsep.join(extra))
+        if found:
+            return found
+    return shutil.which(exe)
 
 
 def host_os() -> str:
@@ -78,7 +89,7 @@ def status_of(e: dict) -> ToolStatus:
             return ToolStatus(e, st, _py_version(mod), mod)
     elif det.startswith("bin:"):
         for exe in det[4:].split("|"):
-            loc = shutil.which(exe)
+            loc = _which(exe)
             if loc:
                 return ToolStatus(e, S_INSTALLED, None, loc)
     if e["integration"] == "paid-host":
@@ -99,7 +110,7 @@ def find_exe(name: str) -> str | None:
     if not e or not e["detect"].startswith("bin:"):
         return None
     for exe in e["detect"][4:].split("|"):
-        if loc := shutil.which(exe):
+        if loc := _which(exe):
             return loc
     return None
 

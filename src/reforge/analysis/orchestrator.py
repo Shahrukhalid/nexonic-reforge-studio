@@ -17,7 +17,7 @@ from ..core.findings import Confidence, Finding, Provenance
 from ..core.safety import Limits, UnsafeInput
 from ..core.tasks import TaskContext
 from ..tools import adapters
-from . import binary, extract, fingerprint, identify, strings
+from . import binary, disasm, extract, fingerprint, identify, strings
 
 log = logging.getLogger("reforge.orchestrator")
 
@@ -135,6 +135,7 @@ class Orchestrator:
 
         # -------- per-subject static analysis
         tools_run = {"ok": 0, "error": 0, "skipped": 0}
+        used: dict[str, int] = {}
         for i, (p, rel, fm) in enumerate(subjects):
             base = 20 + int(70 * i / max(1, len(subjects)))
             ctx.progress(base, f"Analysing {rel}")
@@ -150,12 +151,22 @@ class Orchestrator:
                     self.db.log_tool_run(pid, "lief", f"lief.parse({rel})", t, "ok")
                 except Exception as e:  # noqa: BLE001
                     self.db.log_tool_run(pid, "lief", f"lief.parse({rel})", t, "error", str(e))
+                t = time.time()
+                try:
+                    self._rec(pid, disasm.analyze(p, rel))
+                    self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "ok")
+                except Exception as e:  # noqa: BLE001
+                    self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "error", str(e))
             ctx.check()
             self._rec(pid, strings.analyze(p, rel))
             for a in adapters.applicable(fm, profile):
                 ctx.check()
+                if a.max_subjects is not None and used.get(a.tool, 0) >= a.max_subjects:
+                    continue
+                used[a.tool] = used.get(a.tool, 0) + 1
+                ctx.progress(base, f"{a.tool}: {rel}")
                 t = time.time()
-                status, fs, res = adapters.run_adapter(a, p, rel)
+                status, fs, res = adapters.run_adapter(a, p, rel, self.limits.tool_timeout_s)
                 tools_run[status] += 1
                 self._rec(pid, fs)
                 self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else "(not installed)", t, status,

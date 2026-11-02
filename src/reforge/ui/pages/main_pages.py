@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFontDatabase
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -39,12 +39,26 @@ from ..theme import status_color
 from .common import Page, card
 
 
+def _base(subject: str) -> str:
+    return subject.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1] if subject else ""
+
+
 def _ts(t: float) -> str:
     return dt.datetime.fromtimestamp(t).strftime("%Y-%m-%d %H:%M")
 
 
-def _ro(text) -> QTableWidgetItem:
-    it = QTableWidgetItem(str(text))
+class NumItem(QTableWidgetItem):
+    """Sorts numerically instead of as text."""
+
+    def __lt__(self, other):
+        try:
+            return float(self.text()) < float(other.text())
+        except ValueError:
+            return super().__lt__(other)
+
+
+def _ro(text, cls=QTableWidgetItem) -> QTableWidgetItem:
+    it = cls(str(text))
     it.setFlags(it.flags() & ~Qt.ItemIsEditable)
     return it
 
@@ -254,6 +268,7 @@ class AnalysisPage(Page):
         self.detail = QPlainTextEdit()
         self.detail.setReadOnly(True)
         self.detail.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.detail.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
         split.addWidget(self.tree)
         split.addWidget(self.detail)
         split.setSizes([520, 520])
@@ -284,38 +299,74 @@ class AnalysisPage(Page):
         if pid is None:
             return
         self._rows = self.ctx.db.findings(pid)
-        groups: dict[str, QTreeWidgetItem] = {}
+        by_stage: dict[str, list[dict]] = {}
         for r in self._rows:
-            g = groups.get(r["stage"])
-            if g is None:
-                g = QTreeWidgetItem([r["stage"]])
-                g.setFirstColumnSpanned(True)
-                groups[r["stage"]] = g
-                self.tree.addTopLevelItem(g)
-            it = QTreeWidgetItem([f"{r['kind']} · {r['key']}", r["subject"], r["confidence"], r["tool"]])
-            it.setData(0, Qt.UserRole, r["id"])
-            g.addChild(it)
-        self.tree.expandAll()
+            by_stage.setdefault(r["stage"], []).append(r)
+        for stage, rows in by_stage.items():
+            g = QTreeWidgetItem([f"{stage}  ({len(rows)})"])
+            self.tree.addTopLevelItem(g)
+            subjects = list(dict.fromkeys(r["subject"] for r in rows))
+            nested = len(subjects) > 1
+            parents: dict[str, QTreeWidgetItem] = {}
+            for r in rows:
+                parent = g
+                if nested:
+                    parent = parents.get(r["subject"])
+                    if parent is None:
+                        parent = QTreeWidgetItem([_base(r["subject"]) or "(project)"])
+                        parent.setToolTip(0, r["subject"])
+                        parents[r["subject"]] = parent
+                        g.addChild(parent)
+                it = QTreeWidgetItem([f"{r['kind']} · {r['key']}", _base(r["subject"]), r["confidence"], r["tool"]])
+                it.setToolTip(0, f"{r['kind']} · {r['key']}")
+                it.setToolTip(1, r["subject"])
+                it.setData(0, Qt.UserRole, r["id"])
+                parent.addChild(it)
+            g.setExpanded(True)
+            for p in parents.values():
+                p.setExpanded(len(parents) <= 3)
         self._apply_filter(self.filter.text())
-        if self.tree.topLevelItemCount() and self.tree.topLevelItem(0).childCount():
-            self.tree.setCurrentItem(self.tree.topLevelItem(0).child(0))
+        first = self.tree.topLevelItem(0)
+        while first is not None and first.childCount():
+            first = first.child(0)
+        if first is not None:
+            self.tree.setCurrentItem(first)
 
     def _apply_filter(self, text: str):
         t = text.lower()
+
+        def walk(node) -> bool:
+            if node.childCount() == 0:
+                hit = not t or any(t in node.text(k).lower() for k in range(4)) or t in (node.toolTip(1) or "").lower()
+                node.setHidden(not hit)
+                return hit
+            any_hit = False
+            for j in range(node.childCount()):
+                any_hit |= walk(node.child(j))
+            node.setHidden(bool(t) and not any_hit)
+            return any_hit
+
         for i in range(self.tree.topLevelItemCount()):
-            g = self.tree.topLevelItem(i)
-            for j in range(g.childCount()):
-                c = g.child(j)
-                c.setHidden(bool(t) and not any(t in c.text(k).lower() for k in range(4)))
+            walk(self.tree.topLevelItem(i))
 
     def _show(self, it, _prev):
         if not it or it.data(0, Qt.UserRole) is None:
             return
         fid = it.data(0, Qt.UserRole)
         r = next((x for x in self._rows if x["id"] == fid), None)
-        if r:
-            self.detail.setPlainText(json.dumps({k: r[k] for k in ("stage", "tool", "kind", "key", "subject",
-                                     "confidence", "provenance", "evidence", "value")}, indent=2, default=str))
+        if not r:
+            return
+        head = (f"{r['kind']} · {r['key']}\nfile: {r['subject']}\ntool: {r['tool']}   confidence: {r['confidence']}"
+                f"   provenance: {r['provenance']}\nevidence: {r['evidence']}\n" + "─" * 72 + "\n")
+        v = r["value"]
+        if isinstance(v, dict) and "lines" in v:
+            body = f"; {v.get('arch')} @ {v.get('address')}\n" + "\n".join(v["lines"])
+        elif isinstance(v, dict) and "code" in v:
+            body = ("// DECOMPILED REPRESENTATION - not original source code\n"
+                    f"// {v.get('signature', '')}  @ {v.get('entry', '')}\n\n" + v["code"])
+        else:
+            body = json.dumps(v, indent=2, default=str)
+        self.detail.setPlainText(head + body)
 
     def _rerun(self):
         pid = self._pid()
@@ -379,9 +430,7 @@ class ToolsPage(Page):
             vals = [e["id"], e["name"], e["category"], s.status, s.version or s.location or "",
                     ", ".join(e["platforms"]), e["license"], e["integration"], e["verification"], e["notes"]]
             for c, v in enumerate(vals):
-                it = _ro(v)
-                if c == 0:
-                    it.setData(Qt.DisplayRole, e["id"])
+                it = _ro(v, NumItem if c == 0 else QTableWidgetItem)
                 if c == 3:
                     it.setForeground(QColor(status_color(s.status, self.ctx.theme)))
                 it.setToolTip(e["repo"])

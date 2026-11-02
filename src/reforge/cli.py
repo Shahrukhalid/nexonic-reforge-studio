@@ -23,8 +23,33 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--report")
     t = sub.add_parser("tools")
     t.add_argument("--json", action="store_true")
+    tp = sub.add_parser("toolpack", help="install/list verified tool packs")
+    tp.add_argument("action", choices=["list", "install", "uninstall"])
+    tp.add_argument("pack", nargs="?")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
+    if args.cmd == "toolpack":
+        from .tools import toolpacks
+        if args.action == "list":
+            for pid, spec in toolpacks.packs().items():
+                state = "installed" if toolpacks.is_installed(pid) else "not installed"
+                print(f"{pid:<10} {spec['name']} {spec['version']} ({spec['license']}, ~{spec['size_hint_mb']} MB) - {state}")
+            return 0
+        if not args.pack:
+            ap.error("pack id required")
+        if args.action == "install":
+            last = [-1]
+
+            def prog(done, total):
+                pct = int(done * 100 / total) if total else 0
+                if pct != last[0] and pct % 5 == 0:
+                    last[0] = pct
+                    print(f"  {pct:3d}%  {done // 2**20} MB", file=sys.stderr)
+            print("installed:", toolpacks.install(args.pack, prog))
+        else:
+            toolpacks.uninstall(args.pack)
+        return 0
 
     if args.cmd == "tools":
         sts = registry.all_status()

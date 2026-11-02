@@ -47,7 +47,8 @@ class Budget:
 
 
 # ---------------------------------------------------------------- ZIP family
-def extract_zip(src: Path, dest: Path, limits: Limits, budget: Budget | None = None) -> ExtractResult:
+def extract_zip(src: Path, dest: Path, limits: Limits, budget: Budget | None = None,
+                preserve_exec: bool = False) -> ExtractResult:
     budget = budget or Budget(limits)
     res = ExtractResult(dest)
     with zipfile.ZipFile(src) as z:
@@ -75,6 +76,8 @@ def extract_zip(src: Path, dest: Path, limits: Limits, budget: Budget | None = N
                     if copied > info.file_size + 1024:     # header lied about size
                         raise UnsafeInput(f"member size mismatch: {info.filename}")
                     d.write(chunk)
+            if preserve_exec and (info.external_attr >> 16) & 0o111:
+                target.chmod(0o755)
             res.files.append(info.filename)
     return res
 

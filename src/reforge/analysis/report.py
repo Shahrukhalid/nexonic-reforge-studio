@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..core.db import Database
 
-ORDER = ["identify", "extract", "inventory", "fingerprint", "binary", "strings", "tools", "safety", "report"]
+ORDER = ["identify", "extract", "inventory", "fingerprint", "binary", "disasm", "strings", "tools", "safety", "report"]
 
 
 def to_json(db: Database, pid: int) -> dict:

@@ -1,0 +1,14 @@
+{
+ "ghidra": {
+  "name": "Ghidra",
+  "version": "12.2",
+  "license": "Apache-2.0",
+  "url": "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.2_build/ghidra_12.2_PUBLIC_20261016.zip",
+  "sha256": "2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67",
+  "format": "zip",
+  "platforms": ["macos", "windows", "linux"],
+  "bin_dirs": ["ghidra_12.2_PUBLIC/support"],
+  "requires": "JDK 21+ (java on PATH or JAVA_HOME)",
+  "size_hint_mb": 460
+ }
+}

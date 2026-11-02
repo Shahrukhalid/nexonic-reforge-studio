@@ -12,13 +12,15 @@
   ],
   "license": "Apache-2.0",
   "integration": "cli-adapter",
-  "detect": "bin:analyzeHeadless|ghidraRun",
+  "detect": "bin:analyzeHeadless",
   "priority": 1,
-  "notes": "Headless analyzer via analyzeHeadless; requires JDK 21+",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "notes": "Headless analysis + ReForgeExport.java (functions, call graph, decompilation); requires JDK 21+. Tool pack: ghidra",
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/NationalSecurityAgency/ghidra"
  },
  {
   "id": 2,
@@ -36,10 +38,13 @@
   "detect": "bin:rabin2|r2",
   "priority": 1,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/radareorg/radare2",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 3,
@@ -57,10 +62,13 @@
   "detect": "py:frida",
   "priority": 2,
   "notes": "Dynamic instrumentation: only inside an approved isolated runtime",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/frida/frida",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 4,
@@ -76,10 +84,13 @@
   "detect": "bin:x64dbg|x96dbg",
   "priority": 3,
   "notes": "Windows-only GUI debugger; launched externally",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-28",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/x64dbg/x64dbg",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 5,
@@ -97,10 +108,12 @@
   "detect": "bin:cutter|Cutter",
   "priority": 3,
   "notes": "GUI front-end for Rizin",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/rizinorg/cutter"
  },
  {
   "id": 6,
@@ -118,10 +131,12 @@
   "detect": "bin:rz-bin|rizin",
   "priority": 1,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/rizinorg/rizin"
  },
  {
   "id": 7,
@@ -139,10 +154,12 @@
   "detect": "bin:imhex",
   "priority": 3,
   "notes": "Open file in external hex editor",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-09",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/WerWolv/ImHex"
  },
  {
   "id": 8,
@@ -160,10 +177,12 @@
   "detect": "bin:jadx",
   "priority": 1,
   "notes": "Requires JRE 11+",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-30",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/skylot/jadx"
  },
  {
   "id": 9,
@@ -181,10 +200,12 @@
   "detect": "bin:ilspycmd",
   "priority": 1,
   "notes": "ilspycmd (.NET global tool) is cross-platform; GUI is Windows/Avalonia",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/icsharpcode/ILSpy"
  },
  {
   "id": 10,
@@ -200,10 +221,12 @@
   "detect": "bin:dnSpy",
   "priority": 3,
   "notes": "Windows-only GUI",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/dnSpyEx/dnSpy"
  },
  {
   "id": 11,
@@ -221,10 +244,12 @@
   "detect": "bin:apktool",
   "priority": 1,
   "notes": "Requires JRE",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/iBotPeaches/Apktool"
  },
  {
   "id": 12,
@@ -242,10 +267,12 @@
   "detect": "",
   "priority": 3,
   "notes": "REST API against a user-run MobSF server",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/MobSF/Mobile-Security-Framework-MobSF"
  },
  {
   "id": 13,
@@ -263,10 +290,12 @@
   "detect": "py:angr",
   "priority": 2,
   "notes": "Large dependency set; optional pack",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/angr/angr"
  },
  {
   "id": 14,
@@ -284,10 +313,12 @@
   "detect": "bin:diec",
   "priority": 1,
   "notes": "diec -j JSON output",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/horsicq/Detect-It-Easy"
  },
  {
   "id": 15,
@@ -305,10 +336,12 @@
   "detect": "py:lief",
   "priority": 1,
   "notes": "Bundled core engine",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/lief-project/LIEF"
  },
  {
   "id": 16,
@@ -326,10 +359,12 @@
   "detect": "bin:ipsw",
   "priority": 2,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-31",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/blacktop/ipsw"
  },
  {
   "id": 17,
@@ -340,15 +375,18 @@
   "platforms": [
    "macos"
   ],
-  "license": "unknown",
+  "license": "GPL-2.0",
   "integration": "plugin-host",
   "detect": "",
   "priority": 4,
   "notes": "LLDB python scripts; debugging only in isolated runtime",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2025-07-23",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/DerekSelander/LLDB",
+  "license_note": "catalog said unknown; GitHub detects GPL-2.0"
  },
  {
   "id": 18,
@@ -366,10 +404,12 @@
   "detect": "py:pymobiledevice3",
   "priority": 3,
   "notes": "Talks to user's own iOS device",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/doronz88/pymobiledevice3"
  },
  {
   "id": 19,
@@ -387,10 +427,12 @@
   "detect": "bin:objection",
   "priority": 4,
   "notes": "Runtime mobile exploration (Frida-based); isolated device only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-27",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/sensepost/objection"
  },
  {
   "id": 20,
@@ -406,10 +448,13 @@
   "detect": "bin:class-dump",
   "priority": 4,
   "notes": "Unmaintained; no Swift / modern arm64e support",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2022-04-06",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/nygard/class-dump",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 21,
@@ -427,10 +472,13 @@
   "detect": "bin:llvm-objdump|lldb",
   "priority": 2,
   "notes": "llvm-objdump for disassembly; lldb only in isolated runtime",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/llvm/llvm-project",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 22,
@@ -447,10 +495,12 @@
   "detect": "",
   "priority": 4,
   "notes": "GDB/LLDB plugin",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/pwndbg/pwndbg"
  },
  {
   "id": 23,
@@ -466,10 +516,12 @@
   "detect": "",
   "priority": 4,
   "notes": "GDB plugin; Linux",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-08-20",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/hugsy/gef"
  },
  {
   "id": 24,
@@ -485,10 +537,13 @@
   "detect": "bin:rr",
   "priority": 4,
   "notes": "Linux-only record/replay; needs perf counters",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/rr-debugger/rr",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 25,
@@ -504,10 +559,12 @@
   "detect": "bin:edb",
   "priority": 4,
   "notes": "Linux GUI debugger",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-27",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/eteran/edb-debugger"
  },
  {
   "id": 26,
@@ -525,10 +582,13 @@
   "detect": "bin:vol|vol.py",
   "priority": 4,
   "notes": "Memory-image forensics; Volatility Software License",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-12",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/volatilityfoundation/volatility3",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 27,
@@ -544,10 +604,12 @@
   "detect": "bin:pe-sieve64|pe-sieve",
   "priority": 4,
   "notes": "Scans live processes - Windows only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-06-06",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/hasherezade/pe-sieve"
  },
  {
   "id": 28,
@@ -565,10 +627,12 @@
   "detect": "bin:bindiff",
   "priority": 3,
   "notes": "Consumes BinExport files",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-09-18",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/google/bindiff"
  },
  {
   "id": 29,
@@ -586,10 +650,12 @@
   "detect": "",
   "priority": 3,
   "notes": "Ghidra/IDA/Binary Ninja exporter plugin",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-27",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/google/binexport"
  },
  {
   "id": 30,
@@ -607,10 +673,12 @@
   "detect": "",
   "priority": 4,
   "notes": "IDA plugin (Ghidra support experimental); AGPL",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-25",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/joxeankoret/diaphora"
  },
  {
   "id": 31,
@@ -628,10 +696,13 @@
   "detect": "py:capstone",
   "priority": 1,
   "notes": "Disassembly engine",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-27",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/capstone-engine/capstone",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 32,
@@ -649,10 +720,12 @@
   "detect": "py:keystone",
   "priority": 4,
   "notes": "Assembler; low maintenance activity",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-12",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/keystone-engine/keystone"
  },
  {
   "id": 33,
@@ -670,10 +743,12 @@
   "detect": "py:androguard",
   "priority": 1,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-25",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/androguard/androguard"
  },
  {
   "id": 34,
@@ -691,10 +766,12 @@
   "detect": "",
   "priority": 3,
   "notes": "Java bytecode editor GUI",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-02",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/Col-E/Recaf"
  },
  {
   "id": 35,
@@ -712,10 +789,12 @@
   "detect": "",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-30",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/Konloch/bytecode-viewer"
  },
  {
   "id": 36,
@@ -733,10 +812,12 @@
   "detect": "bin:vineflower",
   "priority": 1,
   "notes": "Java decompiler jar",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-29",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/Vineflower/vineflower"
  },
  {
   "id": 37,
@@ -754,10 +835,12 @@
   "detect": "",
   "priority": 4,
   "notes": "Frida-based dynamic analysis; isolated device only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-16",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/Ch0pin/medusa"
  },
  {
   "id": 38,
@@ -775,10 +858,12 @@
   "detect": "bin:d2j-dex2jar|d2j-dex2jar.sh",
   "priority": 4,
   "notes": "Low maintenance; JADX preferred",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2024-07-21",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/pxb1988/dex2jar"
  },
  {
   "id": 39,
@@ -796,10 +881,12 @@
   "detect": "bin:pyinstxtractor",
   "priority": 2,
   "notes": "Single script; GPL - optional download",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-07-22",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/extremecoders-re/pyinstxtractor"
  },
  {
   "id": 40,
@@ -817,10 +904,12 @@
   "detect": "bin:pycdc",
   "priority": 2,
   "notes": "Partial support for newer Python versions",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-04-07",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/zrax/pycdc"
  },
  {
   "id": 41,
@@ -838,10 +927,12 @@
   "detect": "builtin",
   "priority": 1,
   "notes": "Format parsed natively by ReForge (no Node needed)",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/electron/asar"
  },
  {
   "id": 42,
@@ -859,10 +950,12 @@
   "detect": "bin:GoReSym",
   "priority": 2,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-09-14",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/mandiant/GoReSym"
  },
  {
   "id": 43,
@@ -875,15 +968,18 @@
    "windows",
    "linux"
   ],
-  "license": "unknown",
+  "license": "MIT",
   "integration": "cli-adapter",
   "detect": "",
   "priority": 3,
   "notes": "Flutter arm64 AOT; builds Dart runtime per version",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-08-18",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/worawit/blutter",
+  "license_note": "catalog said unknown; GitHub detects MIT"
  },
  {
   "id": 44,
@@ -896,15 +992,18 @@
    "windows",
    "linux"
   ],
-  "license": "unknown",
+  "license": "AGPL-3.0",
   "integration": "cli-adapter",
   "detect": "bin:hbc-decompiler",
   "priority": 3,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-15",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/P1sec/hermes-dec",
+  "license_note": "catalog said unknown; GitHub detects AGPL-3.0"
  },
  {
   "id": 45,
@@ -922,10 +1021,12 @@
   "detect": "bin:wasm-objdump|wasm2wat",
   "priority": 1,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-28",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/WebAssembly/wabt"
  },
  {
   "id": 46,
@@ -943,10 +1044,12 @@
   "detect": "bin:gdre_tools",
   "priority": 3,
   "notes": "Godot projects",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-14",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/GDRETools/gdsdecomp"
  },
  {
   "id": 47,
@@ -964,10 +1067,12 @@
   "detect": "bin:Il2CppDumper",
   "priority": 2,
   "notes": ".NET; archived/low activity - Cpp2IL preferred",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2024-08-18",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/Perfare/Il2CppDumper"
  },
  {
   "id": 48,
@@ -985,10 +1090,12 @@
   "detect": "bin:Cpp2IL",
   "priority": 2,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-09-15",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/SamboyCoding/Cpp2IL"
  },
  {
   "id": 49,
@@ -1006,10 +1113,12 @@
   "detect": "bin:AssetRipper.GUI.Free",
   "priority": 3,
   "notes": "Only for assets the user is authorized to extract",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-25",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/AssetRipper/AssetRipper"
  },
  {
   "id": 50,
@@ -1021,15 +1130,18 @@
    "windows",
    "linux"
   ],
-  "license": "custom",
+  "license": "MIT",
   "integration": "external-app",
   "detect": "bin:umodel",
   "priority": 4,
-  "notes": "Custom licence; not redistributable by default",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "notes": "GitHub detects MIT, but the README states its own terms - review before bundling",
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2024-03-16",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/gildor2/UEViewer",
+  "license_note": "catalog said custom; GitHub detects MIT"
  },
  {
   "id": 51,
@@ -1045,10 +1157,12 @@
   "detect": "",
   "priority": 4,
   "notes": "Windows-only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/4sval/FModel"
  },
  {
   "id": 52,
@@ -1061,15 +1175,18 @@
    "windows",
    "linux"
   ],
-  "license": "unknown",
+  "license": "MIT",
   "integration": "plugin-host",
   "detect": "",
   "priority": 5,
-  "notes": "Likely unmaintained - verify",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "notes": "radare2 plugin for Unity metadata",
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-18",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/radareorg/r2unity",
+  "license_note": "catalog said unknown; GitHub detects MIT"
  },
  {
   "id": 53,
@@ -1087,10 +1204,13 @@
   "detect": "",
   "priority": 5,
   "notes": "Documentation list, not an executable tool",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": false,
+  "archived": false,
+  "last_push": "2022-11-14",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/imadr/Unity-game-hacking",
+  "license_note": "GitHub could not classify the licence file; value from project docs, review manually"
  },
  {
   "id": 54,
@@ -1108,10 +1228,12 @@
   "detect": "bin:mitmdump",
   "priority": 3,
   "notes": "Only with user consent in an isolated runtime",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01",
+  "verified_at": "2026-11-02",
+  "canonical_repo": "https://github.com/mitmproxy/mitmproxy"
  },
  {
   "id": 55,

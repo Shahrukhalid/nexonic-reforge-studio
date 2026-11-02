@@ -4,7 +4,7 @@
 import sys
 from PyInstaller.utils.hooks import collect_data_files
 
-datas = collect_data_files("reforge", includes=["tools/registry.json"])
+datas = collect_data_files("reforge", includes=["tools/registry.json", "tools/packs.json", "tools/ghidra_scripts/*.java"])
 a = Analysis(["launch.py"], pathex=["../src"], datas=datas,
              hiddenimports=["reforge.ui.main_window"], excludes=["tkinter"], noarchive=False)
 pyz = PYZ(a.pure)
@@ -13,5 +13,5 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="NexonicReForgeStudio"
 coll = COLLECT(exe, a.binaries, a.datas, name="NexonicReForgeStudio")
 if sys.platform == "darwin":
     app = BUNDLE(coll, name="Nexonic ReForge Studio.app", bundle_identifier="com.nexonic.reforgestudio",
-                 info_plist={"CFBundleShortVersionString": "0.1.0", "NSHighResolutionCapable": True,
+                 info_plist={"CFBundleShortVersionString": "0.2.0", "NSHighResolutionCapable": True,
                              "LSMinimumSystemVersion": "12.0", "NSHumanReadableCopyright": "Nexonic Technologies"})
