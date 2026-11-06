@@ -29,10 +29,13 @@ _Last updated: 2026-11-03 · v0.3.0 · Publisher: Nexonic Technologies_
 - **CI 7fd6ce0: ALL GREEN** — 4 OS test jobs, audit (pip-audit caught capstone PYSEC-2026-3544 → fixed 5.0.8), integration 4/4 passed
 - **Release workflow v0.1.0: SUCCESS** — 3 builds (macOS AppleSilicon DMG, macOS Intel DMG, Windows Setup EXE) + draft GitHub release. Unsigned. Not yet install-tested by a human.
 
+## M3 completion (unreleased)
+- Rizin adapter fixed + integration test; ImHex external launcher (opens a copy); Frida bridge (device list only, instrumentation disabled). Local: 60 passed, 7 skipped. Verified in CI job `integration-macos` (macOS arm64, Homebrew Rizin/ImHex, Frida 17.26.1).
+
 ## Known limitations / bugs
 - 31 registry entries still `verification: pending` (anonymous GitHub API limit). Re-run via browser helper + `scripts/apply_verification.py`, or `GITHUB_TOKEN=… python scripts/verify_registry.py`.
 - AAB (protobuf) manifests, NSIS/Inno installers, PYZ module listing (needs safe unmarshal) not implemented.
-- JADX, ILSpy, pycdc, capa, FLOSS, GoReSym, Rizin adapters written but NOT yet verified against real installs (need pinned release digests; add to CI integration job).
+- JADX, ILSpy, pycdc, capa, FLOSS, GoReSym adapters written but NOT yet verified against real installs (need pinned release digests; add to CI integration job).
 - Tool packs: only Ghidra so far (GUI install/build buttons since v0.3.0). Ghidra 12.2 needs JDK 25; on macOS / Linux-arm64 its decompiler must be built once (`reforge-cli toolpack build-natives ghidra`, needs Xcode CLT).
 - Dynamic analysis intentionally disabled (no verified isolation environment).
 - Code signing/notarization: workflow hooks only; nothing is signed.

@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+### Added
+- ImHex: "Open in ImHex" in the Analysis Workspace and `reforge-cli imhex FILE`; opens a copy so the
+  original input is never modified; detected in /Applications and Program Files, not only PATH
+- Frida: optional `[dynamic]` extra, `reforge-cli frida devices` (device discovery only);
+  spawn/attach refused until a verified isolated runtime exists
+- CI `integration-macos` job: Rizin and ImHex (Homebrew) and Frida verified on Apple Silicon
+### Fixed
+- Rizin adapter: `rizin` shell is called with `-q -c ij` (`-Ij` is only valid for `rz-bin`)
+
 ## [0.3.1] - 2026-11-03
 ### Fixed
 - Window opens sized to the screen (max 90%), centred; dashboard columns size to content and never push Profile/Status/Updated off-screen

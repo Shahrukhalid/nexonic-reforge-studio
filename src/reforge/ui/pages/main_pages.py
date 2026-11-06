@@ -289,6 +289,9 @@ class AnalysisPage(Page):
         exp.clicked.connect(self._export)
         dele = QPushButton("Delete project")
         dele.clicked.connect(self._delete)
+        self.imhex = QPushButton("Open in ImHex")
+        self.imhex.setToolTip("Opens a copy of the input file in ImHex (external hex editor)")
+        self.imhex.clicked.connect(self._open_imhex)
         self.filter = QLineEdit()
         self.filter.setPlaceholderText("Filter findings…")
         self.filter.textChanged.connect(self._apply_filter)
@@ -297,6 +300,7 @@ class AnalysisPage(Page):
         top.addWidget(self.filter, 1)
         top.addWidget(self.rerun)
         top.addWidget(exp)
+        top.addWidget(self.imhex)
         top.addWidget(dele)
         self.root.addLayout(top)
         split = QSplitter()
@@ -427,6 +431,18 @@ class AnalysisPage(Page):
         if f:
             report.export(self.ctx.db, pid, Path(f))
             self.ctx.status(f"Report exported: {f}")
+
+    def _open_imhex(self):
+        from ...tools.external import ExternalToolError, open_in_imhex
+        pid = self._pid()
+        p = self.ctx.db.project(pid) if pid else None
+        if not p:
+            return
+        try:
+            _, copy = open_in_imhex(Path(p["input_path"]), Path(p["workdir"]) if p.get("workdir") else None)
+            self.ctx.status(f"Opened a copy in ImHex: {copy}")
+        except (ExternalToolError, OSError) as e:
+            QMessageBox.information(self, "ImHex", str(e))
 
     def _delete(self):
         pid = self._pid()

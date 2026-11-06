@@ -27,8 +27,32 @@ def main(argv: list[str] | None = None) -> int:
     tp = sub.add_parser("toolpack", help="install/list verified tool packs")
     tp.add_argument("action", choices=["list", "install", "uninstall", "build-natives"])
     tp.add_argument("pack", nargs="?")
+    ih = sub.add_parser("imhex", help="open a copy of a file in ImHex")
+    ih.add_argument("target")
+    fr = sub.add_parser("frida", help="Frida status and device list (no instrumentation)")
+    fr.add_argument("action", choices=["devices"])
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
+    if args.cmd == "imhex":
+        from .tools.external import ExternalToolError, open_in_imhex
+        try:
+            _, copy = open_in_imhex(Path(args.target))
+        except ExternalToolError as e:
+            print(e, file=sys.stderr)
+            return 2
+        print(f"Opened copy in ImHex: {copy}")
+        return 0
+
+    if args.cmd == "frida":
+        from .tools import frida_bridge
+        if not frida_bridge.info():
+            print("Frida is not installed (pip install 'nexonic-reforge-studio[dynamic]')", file=sys.stderr)
+            return 2
+        print(f"Frida {frida_bridge.info()['version']} - instrumentation disabled: {frida_bridge.REASON}")
+        for d in frida_bridge.devices():
+            print(f"{d['type']:<8} {d['id']:<24} {d['name']}")
+        return 0
 
     if args.cmd == "doctor":
         from .tools import jdk, toolpacks

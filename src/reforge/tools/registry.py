@@ -37,7 +37,24 @@ def _which(exe: str) -> str | None:
         found = shutil.which(exe, path=os.pathsep.join(extra))
         if found:
             return found
-    return shutil.which(exe)
+    found = shutil.which(exe)
+    if found:
+        return found
+    for cand in APP_PATHS.get(exe, {}).get(host_os(), []):
+        path = Path(os.path.expandvars(os.path.expanduser(cand)))
+        if path.is_file():
+            return str(path)
+    return None
+
+
+# GUI tools that install outside PATH (app bundles, Program Files).
+APP_PATHS = {
+    "imhex": {
+        "macos": ["/Applications/ImHex.app/Contents/MacOS/imhex", "~/Applications/ImHex.app/Contents/MacOS/imhex"],
+        "windows": [r"%ProgramFiles%\ImHex\imhex-gui.exe", r"%ProgramFiles%\ImHex\imhex.exe",
+                    r"%LOCALAPPDATA%\Programs\ImHex\imhex-gui.exe"],
+    },
+}
 
 
 def host_os() -> str:
