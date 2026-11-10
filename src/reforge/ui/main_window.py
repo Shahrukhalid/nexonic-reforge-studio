@@ -20,7 +20,9 @@ from ..core.db import Database
 from ..core.safety import Limits
 from ..core.tasks import TaskManager
 from .pages.common import PlannedPage
+from .pages.explorer_page import ApplicationExplorerPage
 from .pages.main_pages import AnalysisPage, DashboardPage, ImportPage, LogsPage, SettingsPage, ToolsPage
+from .pages.ui_explorer_page import VisualUIExplorerPage
 from .theme import qss
 
 log = logging.getLogger("reforge.ui")
@@ -47,10 +49,6 @@ class QtLogHandler(logging.Handler):
 
 
 PLANNED = [
-    ("Application Explorer", "Milestone 6", "Module, class, function, dependency and API-endpoint graph built from "
-     "analysis findings, with feature relationships."),
-    ("Visual UI Explorer", "Milestone 6", "Screen inventory from extracted resources (nibs/storyboards, XAML, "
-     "Android layouts, HTML) plus imported reference screenshots."),
     ("AI Assistant", "Milestone 7", "Project-aware chat with BYOK providers (OpenRouter, Anthropic, OpenAI, Gemini) "
      "and local models (Ollama, llama.cpp). Keys stored in macOS Keychain / Windows Credential Manager. "
      "Paid usage requires explicit opt-in."),
@@ -135,7 +133,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.pages = {}
-        order = [DashboardPage, ImportPage, AnalysisPage]
+        order = [DashboardPage, ImportPage, AnalysisPage, ApplicationExplorerPage, VisualUIExplorerPage]
         for cls in order:
             self._add(cls(self.ctx))
         for title, ms, scope in PLANNED:
