@@ -41,6 +41,20 @@ class AnalysisCache:
             return None
         return None
 
+    def get_findings(self, file_sha256: str, tool: str, stage: str) -> list[Finding] | None:
+        """Retrieve cached findings deserialized as Finding instances with enum validation."""
+        cached = self.get(file_sha256, tool, stage)
+        if cached is None:
+            return None
+        out: list[Finding] = []
+        for item in cached:
+            if isinstance(item, dict):
+                try:
+                    out.append(Finding.from_dict(item))
+                except Exception:
+                    pass
+        return out
+
     def put(self, file_sha256: str, tool: str, stage: str, items: list[Finding]) -> None:
         """Store findings in persistent cache."""
         if not file_sha256 or not items:

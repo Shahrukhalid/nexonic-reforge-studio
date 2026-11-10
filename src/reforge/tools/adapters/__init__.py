@@ -34,10 +34,23 @@ def _json_or_text(res: ToolResult, tool: str, key: str, rel: str) -> list[Findin
     if not res.ok:
         return [Finding(STAGE, tool, "tool_error", key, {"rc": res.returncode, "stderr": res.stderr[-2000:],
                         "timed_out": res.timed_out}, Confidence.CONFIRMED, subject=rel)]
+    raw = res.stdout.strip()
+    val = None
     try:
-        val = json.loads(res.stdout)
+        val = json.loads(raw)
     except json.JSONDecodeError:
-        val = res.stdout[:200_000]
+        # Check if JSON payload is preceded by banner or diagnostic output
+        start_brace = raw.find("{")
+        start_bracket = raw.find("[")
+        candidates = [i for i in (start_brace, start_bracket) if i != -1]
+        if candidates:
+            first_idx = min(candidates)
+            try:
+                val = json.loads(raw[first_idx:])
+            except Exception:
+                pass
+        if val is None:
+            val = raw[:200_000]
     return [Finding(STAGE, tool, "tool_output", key, val, Confidence.CONFIRMED, Provenance.PARSED,
                     f"{tool} output" + (" (truncated)" if res.truncated else ""), rel)]
 

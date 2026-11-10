@@ -46,6 +46,40 @@ def test_analysis_cache_lifecycle(tmp_path: Path):
     assert cache.stats() == (0, 0)
 
 
+def test_cold_and_warm_cache_findings_enums(db, tmp_path):
+    cache = AnalysisCache(tmp_path / "cache")
+    f = Finding(
+        stage="tools",
+        tool="test_tool",
+        kind="test_kind",
+        key="test_key",
+        value={"data": 123},
+        confidence=Confidence.STRONG,
+        provenance=Provenance.INFERRED,
+    )
+    pid = db.create_project("test_cache_proj", str(tmp_path / "dummy.bin"), "standard")
+
+    # 1. Cold cache put
+    cache.put("abcdef1234567890", "test_tool", "tools", [f])
+
+    # 2. Warm cache retrieve
+    deserialized = cache.get_findings("abcdef1234567890", "test_tool", "tools")
+    assert deserialized is not None
+    assert len(deserialized) == 1
+    ret = deserialized[0]
+    assert ret.confidence == Confidence.STRONG
+    assert isinstance(ret.confidence, Confidence)
+    assert ret.provenance == Provenance.INFERRED
+    assert isinstance(ret.provenance, Provenance)
+
+    # 3. Add to DB without AttributeError
+    db.add_findings(pid, [ret])
+    db_records = db.findings(pid)
+    assert len(db_records) == 1
+    assert db_records[0]["confidence"] == "strongly_inferred"
+    assert db_records[0]["provenance"] == "inferred_behavior"
+
+
 def test_orchestrator_uses_cache(db, samples, tmp_path):
     cache = AnalysisCache(tmp_path / "cache")
     orch = Orchestrator(db, cache=cache)

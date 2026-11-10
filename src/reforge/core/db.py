@@ -107,8 +107,10 @@ class Database:
 
     def add_findings(self, pid: int, items: Iterable[Finding]) -> int:
         rows = [
-            (pid, f.stage, f.tool, f.kind, f.key, json.dumps(f.value, default=str), f.confidence.value,
-             f.provenance.value, f.evidence, f.subject, json.dumps(f.extra, default=str))
+            (pid, f.stage, f.tool, f.kind, f.key, json.dumps(f.value, default=str),
+             f.confidence.value if hasattr(f.confidence, "value") else str(f.confidence),
+             f.provenance.value if hasattr(f.provenance, "value") else str(f.provenance),
+             f.evidence, f.subject, json.dumps(f.extra, default=str))
             for f in items
         ]
         with self._lock:

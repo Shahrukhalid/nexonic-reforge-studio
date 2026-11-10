@@ -1,10 +1,27 @@
 # Changelog
 
-## [0.5.0] - 2026-11-10
+## [0.5.1] - 2026-11-10
+### Fixed
+- **Analysis Cache Enum Deserialization**:
+  - Added `Finding.__post_init__` and `Finding.from_dict` ensuring cached finding strings are converted into proper `Confidence` and `Provenance` enums.
+  - Resolved `AttributeError: 'str' object has no attribute 'value'` across Linux/macOS runs in `AnalysisOrchestrator` and `Database.add_findings`.
+  - Added `AnalysisCache.get_findings` and cold/warm cache regression tests (`test_cold_and_warm_cache_findings_enums`).
+- **Reconstruction Studio Scaffolding & Live Runner**:
+  - Removed third-party dependencies (`requests`, `pydantic`) from generated clean-room Python scaffold skeleton; replaced with standard library `dataclasses` and `urllib.request`.
+  - Configured test runner to inject `pythonpath=src` into `pytest` invocation, allowing scaffolded projects to execute test suites live out of the box (`test_run_project_tests_live`).
+- **macOS Intel Runner Restoration**:
+  - Restored official supported `macos-15-intel` runner label across CI, release, and nightly workflows.
+- **Rizin Integration & Test Diagnostics**:
+  - Enhanced adapter JSON output parser (`_json_or_text`) to strip banner and diagnostic preamble text before parsing tool JSON.
+  - Updated Rizin test assertion to accept standard Rizin `info`, `bin`, and `core` JSON structures.
+  - Updated macOS integration job to require `test_rizin_integration` explicitly while allowing optional external tools to be reported cleanly.
+- **Safe Release Pipeline**:
+  - Added release gate verification preventing installer generation or publication unless CI quality gates for the exact commit have succeeded.
+
+## [0.5.0] - 2026-11-10 [UNRELEASED - CI GATES FAILED]
 ### Added
 - **Persistent Analysis Cache Engine (`reforge.analysis.cache.AnalysisCache`)**:
   - SHA-256 keyed caching of tool analysis and decompiler findings on disk.
-  - Transparently integrated into `AnalysisOrchestrator`, preventing redundant disassembly and decompiler passes.
 - **Application Explorer Enhancements**:
   - Interactive "Copy Code" action copying disassembled and decompiled snippets to system clipboard.
   - "Save Code to File…" action saving code snippets directly to user-specified paths.

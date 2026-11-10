@@ -45,10 +45,7 @@ description = "Clean-room reimplementation of {project_name}"
 readme = "README.md"
 license = {{ text = "{license_type}" }}
 requires-python = ">=3.10"
-dependencies = [
-    "requests>=2.28.0",
-    "pydantic>=2.0.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0"]
@@ -59,8 +56,8 @@ pythonpath = ["src"]
 """
         files["README.md"] = f"# {project_name}\n\nIndependent clean-room reimplementation.\n\n## Usage\n```bash\npip install -e .[dev]\npytest\n```\n"
         files[f"src/{safe_name}/__init__.py"] = f'"""Package {safe_name}."""\n__version__ = "0.1.0"\n'
-        files[f"src/{safe_name}/models.py"] = '"""Data models."""\nfrom pydantic import BaseModel\n\nclass ConfigModel(BaseModel):\n    name: str = "default"\n    enabled: bool = True\n'
-        files[f"src/{safe_name}/client.py"] = f'"""API Client implementation."""\nfrom __future__ import annotations\nimport requests\n\nclass Client:\n    def __init__(self, base_url: str = "http://localhost:8080"):\n        self.base_url = base_url\n\n    def status(self) -> dict:\n        return {{"status": "ok", "app": "{project_name}"}}\n'
+        files[f"src/{safe_name}/models.py"] = '"""Data models."""\nfrom dataclasses import dataclass\n\n@dataclass\nclass ConfigModel:\n    name: str = "default"\n    enabled: bool = True\n'
+        files[f"src/{safe_name}/client.py"] = f'"""API Client implementation."""\nfrom __future__ import annotations\nimport json\nimport urllib.request\n\nclass Client:\n    def __init__(self, base_url: str = "http://localhost:8080"):\n        self.base_url = base_url\n\n    def status(self) -> dict:\n        return {{"status": "ok", "app": "{project_name}"}}\n'
         files[f"src/{safe_name}/main.py"] = '"""Application entry point."""\nfrom .client import Client\n\ndef main():\n    c = Client()\n    print(f"Initialized {c.status()}")\n\nif __name__ == "__main__":\n    main()\n'
         files["tests/test_main.py"] = f'from {safe_name}.client import Client\n\ndef test_client_status():\n    c = Client()\n    res = c.status()\n    assert res["status"] == "ok"\n'
 
