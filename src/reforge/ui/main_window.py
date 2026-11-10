@@ -23,7 +23,9 @@ from .pages.ai_page import AIAssistantPage
 from .pages.common import PlannedPage
 from .pages.explorer_page import ApplicationExplorerPage
 from .pages.main_pages import AnalysisPage, DashboardPage, ImportPage, LogsPage, SettingsPage, ToolsPage
+from .pages.reconstruct_page import ReconstructionStudioPage
 from .pages.ui_explorer_page import VisualUIExplorerPage
+from .pages.workspace_page import SourceWorkspacePage
 from .theme import qss
 
 log = logging.getLogger("reforge.ui")
@@ -50,9 +52,6 @@ class QtLogHandler(logging.Handler):
 
 
 PLANNED = [
-    ("Reconstruction Studio", "Milestone 8", "Feature selection, specification approval and clean-room project "
-     "generation with build/test loop. Generated code is always labelled as newly generated."),
-    ("Source Code Workspace", "Milestone 8", "Explorer, editor, search and diff for generated projects."),
     ("Build & Export", "Milestone 9-10", "Source/project/report export and packaging of generated projects."),
 ]
 
@@ -131,7 +130,16 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.pages = {}
-        order = [DashboardPage, ImportPage, AnalysisPage, ApplicationExplorerPage, VisualUIExplorerPage, AIAssistantPage]
+        order = [
+            DashboardPage,
+            ImportPage,
+            AnalysisPage,
+            ApplicationExplorerPage,
+            VisualUIExplorerPage,
+            AIAssistantPage,
+            ReconstructionStudioPage,
+            SourceWorkspacePage,
+        ]
         for cls in order:
             self._add(cls(self.ctx))
         for title, ms, scope in PLANNED:
