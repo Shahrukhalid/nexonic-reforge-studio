@@ -10,6 +10,17 @@ _Last updated: 2026-11-10 · v0.9.0 · Publisher: Nexonic Technologies_
   - Release tag immutability has been enforced in `scripts/autopilot.py` to prevent accidental tag rewriting permanently.
 
 ## Published Releases
+- **v0.9.0 (Published 2026-11-10T10:40:34Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.9.0
+  - Release Commit: `8b761e4` (merged via PR #16 with all 7 required CI checks passing)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,847,008 bytes)
+      SHA-256: `12f66496e53bec61ca6e2d3828eaacc7f6f0d3c31dbde3969dd80fb54715dff8`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (50,123,074 bytes)
+      SHA-256: `9052bc0d36f1d5bbc47f7a8e12accf9c47cc77ee5eab695214f535de9c380311`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,474,627 bytes)
+      SHA-256: `b6ce9e764f12f9d134271bda910309c7133248ced947144c36ffcb1ab5714efa`
+    - `SHA256SUMS.txt` (328 bytes — unified manifest verified containing all 3 installer hashes)
 - **v0.8.0 (Published 2026-11-10T09:46:26Z)**
   - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.8.0
   - Release Commit: `c26df0f` (merged via PR #15 with all 7 required CI checks passing)
@@ -90,5 +101,4 @@ _Last updated: 2026-11-10 · v0.9.0 · Publisher: Nexonic Technologies_
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.8.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `c26df0f`.
-- v0.9.0 development completed, tested, and staged for pull request validation.
+- v0.9.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `8b761e4`.
