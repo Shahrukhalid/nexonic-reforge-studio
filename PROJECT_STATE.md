@@ -3,6 +3,17 @@
 _Last updated: 2026-11-10 · v0.7.0 · Publisher: Nexonic Technologies_
 
 ## Published Releases
+- **v0.7.0 (Published 2026-11-10T08:58:37Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.7.0
+  - Release Commit: `cad6093` (fail-closed release gate verified on commit with all 7 required CI checks passing)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,795,605 bytes)
+      SHA-256: `478d150a3bd431270ded1dca170e0014ca475798f32b3b0499f5d82ae0e8ce1e`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (50,093,454 bytes)
+      SHA-256: `c9d72c42dac8acfa5949192d46e7e5f890966c0d4e017e15e9b5f1264b5d2f5e`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,545,154 bytes)
+      SHA-256: `097bc75f3231d1dfed69ba5c5a281cb42115047eea71dd9312ddfbff4ce6b2fd`
+    - `SHA256SUMS.txt` (328 bytes — unified manifest verified containing all 3 installer hashes)
 - **v0.6.0 (Published 2026-11-10T06:49:27Z)**
   - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.6.0
   - Release Commit: `9a6eb7f` (merged via PR #13)
@@ -54,9 +65,9 @@ _Last updated: 2026-11-10 · v0.7.0 · Publisher: Nexonic Technologies_
 - Release Integrity: SHA-256 checksum aggregation verified across all target platforms with automated release gate and branch protection enforcement.
 
 ## Test Results
-- Total automated tests: 106 tests across unit, GUI, adapters, cache, and export capabilities (94 passed, 12 integration skips when engines not installed on host).
+- Total automated tests: 118 tests across unit, GUI, adapters, cache, synthesizer, binary diffing, test generator, and export capabilities (106 passed, 12 integration skips locally; 112 passed, 6 skips on CI).
 - `ruff check`: All checks clean.
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.6.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing.
+- v0.7.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `cad6093`.
