@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.2] - 2026-11-10
+### Fixed & Hardened
+- **Release Checksum Aggregation**:
+  - Resolved artifact overwriting during download by producing unique matrix checksum files (`dist/SHA256SUMS-${{ matrix.label }}.txt`).
+  - Added multi-platform checksum aggregation and strict verification in `publish` job: parses all hashes, verifies that `Windows_x64_Setup.exe`, `macOS_AppleSilicon.dmg`, and `macOS_Intel.dmg` are present, and validates that every file on disk matches its SHA-256 digest before publication.
+- **Auto-Merge Race Condition Resolution**:
+  - Configured concurrency control (`auto-merge-${{ github.event.pull_request.number }}` with `cancel-in-progress: true`) preventing concurrent auto-merge workflows from clashing.
+  - Made auto-merge step idempotent by catching and safely inspecting already-merged/in-progress PR states.
+- **Release CI Gate Enforcement**:
+  - Implemented `verify-gate` job in `release.yml` and `check-ci` / `tag` commands in `scripts/autopilot.py` to ensure all 7 required checks (`test (ubuntu-24.04)`, `test (macos-15)`, `test (macos-15-intel)`, `test (windows-2022)`, `audit`, `integration`, `integration-macos`) are verified passing before release builds proceed.
+  - Enabled branch protection rules on `main` to prevent merging PRs unless all 7 required CI checks succeed.
+
 ## [0.5.1] - 2026-11-10
 ### Fixed
 - **Analysis Cache Enum Deserialization**:

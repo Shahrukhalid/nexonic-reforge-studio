@@ -3,6 +3,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -23,4 +27,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Enabling auto-merge for PR: $PR_URL"
-          gh pr merge "$PR_URL" --auto --squash
+          gh pr merge "$PR_URL" --auto --squash || {
+            echo "Auto-merge command exited with code $? (already scheduled, merged, or in progress); checking status..."
+            gh pr view "$PR_URL" --json autoMergeRequest,state
+          }
