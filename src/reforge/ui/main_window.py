@@ -22,6 +22,7 @@ from ..core.tasks import TaskManager
 from .pages.ai_page import AIAssistantPage
 from .pages.common import PlannedPage
 from .pages.explorer_page import ApplicationExplorerPage
+from .pages.export_page import BuildExportPage
 from .pages.main_pages import AnalysisPage, DashboardPage, ImportPage, LogsPage, SettingsPage, ToolsPage
 from .pages.reconstruct_page import ReconstructionStudioPage
 from .pages.ui_explorer_page import VisualUIExplorerPage
@@ -51,9 +52,7 @@ class QtLogHandler(logging.Handler):
             pass
 
 
-PLANNED = [
-    ("Build & Export", "Milestone 9-10", "Source/project/report export and packaging of generated projects."),
-]
+PLANNED: list[tuple[str, str, str]] = []
 
 
 class AppContext:
@@ -139,6 +138,7 @@ class MainWindow(QMainWindow):
             AIAssistantPage,
             ReconstructionStudioPage,
             SourceWorkspacePage,
+            BuildExportPage,
         ]
         for cls in order:
             self._add(cls(self.ctx))
