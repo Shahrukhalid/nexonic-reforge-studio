@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.7.0] - 2026-11-10
+### Added
+- **Advanced Decompilation Synthesizer**:
+  - Translates linear disassembly (Capstone) and tool findings into structured, evidence-linked pseudocode (`DecompilationSynthesizer`).
+  - Automatic basic block (`CFGBlock`) decomposition, branch target identification, and loop detection.
+  - Prominent `[RECONSTRUCTED ANALYSIS - NOT ORIGINAL SOURCE CODE]` banner and exact instruction offset comments.
+  - Integrated into the analysis pipeline via `AnalysisOrchestrator` to automatically synthesize decompiled functions.
+- **Interactive Binary Diffing Engine**:
+  - Deterministic and heuristic multi-level comparison (`BinaryDiffEngine`) of metadata, sections, imports/exports, strings, and functions.
+  - Code similarity scoring and unified diff generation for matching functions.
+  - Tab 6 ("Binary Diff") in `ApplicationExplorerPage` with target selector, filter controls, summary metrics, and synchronized dual-pane viewer.
+  - Markdown and JSON comparison report exporter.
+- **Evidence-Based Clean-Room Test Generator**:
+  - Multi-language test suite generation (`reforge.reconstruct.tests_gen`) supporting Python, TypeScript, Rust, Go, and C#.
+  - Rigorous categorization badges: `[VERIFIED CONTRACT]`, `[BEHAVIORAL MOCK]`, `[MANUAL VALIDATION REQUIRED]`, `[SCAFFOLD INTEGRITY]`.
+- **Full Legal License Templates**:
+  - Integrated complete, valid legal texts for MIT, Apache-2.0, BSD-3-Clause, and Proprietary licenses into clean-room scaffold generation.
+- **Clean-Room Specification Categorization**:
+  - Explicit section categorization distinguishing observed facts, inferred behaviors, unverified endpoints, and unknown boundaries.
+
+### Fixed & Hardened
+- **Fail-Closed Release Gate**:
+  - Enforced strict fail-closed validation on `${{ github.sha }}` in `.github/workflows/release.yml` and `scripts/autopilot.py`: every single required CI check must report conclusion `success` on the exact release commit or the release fails immediately.
+  - Eliminated PR-head lookup fallback to ensure release commits are independently verified.
+- **Documentation**:
+  - Corrected Ghidra requirement to `JDK 25+ required for Ghidra 12.x headless analysis` in `README.md`.
+
 ## [0.6.0] - 2026-11-10
 ### Added
 - **Interactive Decompilation & Disassembly Viewer**:

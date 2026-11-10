@@ -38,7 +38,7 @@ jobs:
               except Exception:
                   pass
 
-          statuses = {r['name']: r.get('conclusion') for r in runs if 'name' in r}
+          statuses = {r['name']: (r.get('status'), r.get('conclusion')) for r in runs if 'name' in r}
 
           required = [
               'test (ubuntu-24.04)',
@@ -50,35 +50,26 @@ jobs:
               'integration-macos'
           ]
 
-          # If checks are not directly on this commit, look up associated PR head
-          if not all(req in statuses for req in required):
-              cmd_pr = ['gh', 'api', f'repos/{repo}/commits/{sha}/pulls']
-              res_pr = subprocess.run(cmd_pr, capture_output=True, text=True, env=os.environ)
-              if res_pr.returncode == 0:
-                  try:
-                      prs = json.loads(res_pr.stdout)
-                      if prs and isinstance(prs, list):
-                          pr_head = prs[0]['head']['sha']
-                          print(f'Found associated PR #{prs[0][\"number\"]}; checking PR head commit {pr_head[:7]}...')
-                          cmd_head = ['gh', 'api', f'repos/{repo}/commits/{pr_head}/check-runs', '--paginate']
-                          res_head = subprocess.run(cmd_head, capture_output=True, text=True, env=os.environ)
-                          if res_head.returncode == 0:
-                              for r in json.loads(res_head.stdout).get('check_runs', []):
-                                  if 'name' in r and r['name'] not in statuses:
-                                      statuses[r['name']] = r.get('conclusion')
-                  except Exception as e:
-                      print(f'Notice querying associated PR: {e}')
-
-          failed = [c for c in required if statuses.get(c) == 'failure']
-          if failed:
-              print(f'::error::Required CI checks failed: {failed}')
-              sys.exit(1)
-
+          # Fail closed: every required check must have status=completed and conclusion=success
+          # on the exact target release commit.
           missing = [c for c in required if c not in statuses]
           if missing:
-              print(f'::warning::Some required checks were not found in check-runs: {missing}')
+              print(f'::error::Release gate failed closed: missing required checks on commit {sha}: {missing}')
+              sys.exit(1)
 
-          print(f'Verified check-runs for {sha}: {statuses}')
+          failed_or_incomplete = []
+          for req in required:
+              status, conclusion = statuses[req]
+              if status != 'completed' or conclusion != 'success':
+                  failed_or_incomplete.append((req, status, conclusion))
+
+          if failed_or_incomplete:
+              print(f'::error::Release gate failed closed: non-success checks on commit {sha}: {failed_or_incomplete}')
+              sys.exit(1)
+
+          print(f'✓ All {len(required)} required CI checks passed with conclusion=success on commit {sha}:')
+          for req in required:
+              print(f'  - {req}: {statuses[req]}')
           "
 
   build:

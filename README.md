@@ -36,7 +36,7 @@
 ### Prerequisites
 - Python 3.11 or Python 3.12
 - Git
-- For Ghidra analysis: Java Development Kit (JDK 21 or JDK 25 recommended)
+- For Ghidra analysis: Java Development Kit (JDK 25+ required for Ghidra 12.x headless analysis, e.g. OpenJDK 25 EA or Adoptium / Temurin 25+)
 - For native build tasks: CMake 3.25+ and platform C++ compiler (MSVC, Clang, or GCC)
 
 ---

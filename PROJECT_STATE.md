@@ -1,6 +1,6 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.6.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.7.0 · Publisher: Nexonic Technologies_
 
 ## Published Releases
 - **v0.6.0 (Published 2026-11-10T06:49:27Z)**

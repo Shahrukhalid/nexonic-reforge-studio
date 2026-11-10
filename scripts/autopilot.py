@@ -179,26 +179,12 @@ def check_ci_status(commit_sha: str | None = None) -> tuple[bool, dict[str, str]
     check_runs = runs_data.get("check_runs", []) if isinstance(runs_data, dict) else []
     statuses = {r["name"]: (r.get("status"), r.get("conclusion")) for r in check_runs if "name" in r}
 
-    # If missing required checks on this commit directly, check associated PR head commit
-    if not all(req in statuses for req in REQUIRED_CI_CHECKS):
-        try:
-            prs = github_request(f"commits/{commit_sha}/pulls")
-            if prs and isinstance(prs, list):
-                pr_head = prs[0]["head"]["sha"]
-                pr_num = prs[0]["number"]
-                print(f"Found associated PR #{pr_num}; checking PR head commit {pr_head[:7]}...")
-                pr_runs = github_request(f"commits/{pr_head}/check-runs")
-                for r in pr_runs.get("check_runs", []):
-                    if "name" in r and r["name"] not in statuses:
-                        statuses[r["name"]] = (r.get("status"), r.get("conclusion"))
-        except Exception as e:
-            print(f"Notice: Could not query associated PR for commit: {e}", file=sys.stderr)
-
-    print(f"Evaluated {len(statuses)} check-runs for commit {commit_sha}:")
+    print(f"Evaluated {len(statuses)} check-runs directly for commit {commit_sha}:")
     for name, (status, conclusion) in statuses.items():
         if name in REQUIRED_CI_CHECKS:
             print(f"  - {name}: status={status}, conclusion={conclusion}")
 
+    # Fail closed: every required check must be explicitly present, completed, and successful on this exact commit.
     missing = []
     failed = []
     for req in REQUIRED_CI_CHECKS:
@@ -210,13 +196,13 @@ def check_ci_status(commit_sha: str | None = None) -> tuple[bool, dict[str, str]
                 failed.append((req, status, conclusion))
 
     if missing:
-        print(f"Missing required CI checks: {missing}")
+        print(f"Missing required CI checks on target commit: {missing}")
     if failed:
-        print(f"Failed or incomplete required CI checks: {failed}")
+        print(f"Failed or incomplete required CI checks on target commit: {failed}")
 
     all_ok = not missing and not failed
     if all_ok:
-        print("✓ All 7 required CI checks passed for this commit.")
+        print("✓ All 7 required CI checks passed with conclusion=success for this exact commit.")
     return all_ok, {k: str(v) for k, v in statuses.items()}
 
 
