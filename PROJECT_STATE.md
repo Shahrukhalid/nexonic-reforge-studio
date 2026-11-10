@@ -1,8 +1,19 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.5.2 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.6.0 · Publisher: Nexonic Technologies_
 
 ## Published Releases
+- **v0.6.0 (Published 2026-11-10T06:49:27Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.6.0
+  - Release Commit: `9a6eb7f` (merged via PR #13)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,760,947 bytes / 37.92 MB)
+      SHA-256: `d946844672b95251f2f8689c2250e3f8bc66fcb0aa6076c5d61dda9d3e3d06bc`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (49,199,982 bytes / 46.92 MB)
+      SHA-256: `868f65c4bde454a48763d6c380a99b67a2eb40ae2cfbeb206edde3f71d00080c`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,680,054 bytes / 52.15 MB)
+      SHA-256: `dc2ce52b02e1676c8f5421d8559811135b51f941ab41eef7b43b7235a537547f`
+    - `SHA256SUMS.txt` (328 bytes — unified manifest verified containing all 3 installer hashes)
 - **v0.5.2 (Published 2026-11-10T06:19:24Z)**
   - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.5.2
   - Release Commit: `a196320` (merged via PR #12)
@@ -26,11 +37,11 @@ _Last updated: 2026-11-10 · v0.5.2 · Publisher: Nexonic Technologies_
       SHA-256: `e9164eac7f817311a3ebf5f86e9908a9fdc2a6bfb10dcb4f7868886078814508`
     - `SHA256SUMS.txt` (112 bytes)
 
-## Current Milestone: v0.6.0
-**v0.6.0 — Deeper Reverse-Engineering Capabilities, Assembly Syntax Highlighting & Search, and Multi-Module Clean-Room Reconstruction.**
-- Deeper Reverse-Engineering: Assembly syntax highlighting (registers, addresses, mnemonics, comments) and interactive in-line search in Analysis Workspace and Application Explorer.
-- Call Graph & Cross-Reference Explorer: Deep call target extraction from linear disassembly and decompiler output.
-- Reconstruction Studio: Multi-module clean-room scaffolding and automated functional specification generator (`SPECIFICATION.md`).
+## Current Milestone: v0.7.0
+**v0.7.0 — Advanced Clean-Room Decompilation Synthesis, Diffing & Interactive Binary Navigation.**
+- Advanced Decompilation Synthesizer: Heuristic pseudocode generation bridging disassemblers and high-level representations.
+- Interactive Binary Diffing: Side-by-side binary and disassembly comparison engine with visual structural diffing.
+- End-to-End Clean-Room Pipeline: Automated test generation from discovered binary behavioral profiles.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite storage, thread-pool background task runner, PyInstaller packaging.
@@ -48,4 +59,4 @@ _Last updated: 2026-11-10 · v0.5.2 · Publisher: Nexonic Technologies_
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.5.2 published and verified live on GitHub Releases with complete multi-platform checksum manifest.
+- v0.6.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing.
