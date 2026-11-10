@@ -1,6 +1,5 @@
 """Milestone 3 completion: Rizin adapter, ImHex launcher, Frida bridge."""
 import subprocess
-import sys
 
 import pytest
 
@@ -74,8 +73,10 @@ def test_frida_integration():
     assert registry.status_of(registry.by_name("Frida")).available
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="ImHex cask check runs on macOS CI")
 def test_imhex_integration():
-    if not external.find_imhex():
-        pytest.skip("ImHex not installed")
-    assert registry.status_of(registry.by_name("ImHex")).available
+    exe = external.find_imhex()
+    st = registry.status_of(registry.by_name("ImHex"))
+    if exe:
+        assert st.available is True
+    else:
+        assert st.available is False

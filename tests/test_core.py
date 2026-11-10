@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -94,9 +95,9 @@ def test_secrets_redacted(tmp_path):
 
 
 def test_run_tool_timeout_and_no_shell():
-    r = run_tool(["sleep", "5"], timeout=1)
+    r = run_tool([sys.executable, "-c", "import time; time.sleep(5)"], timeout=1)
     assert r.timed_out and not r.ok
-    r = run_tool(["echo", "$(id)"])
+    r = run_tool([sys.executable, "-c", "import sys; print(sys.argv[1])", "$(id)"])
     assert r.stdout.strip() == "$(id)"
 
 

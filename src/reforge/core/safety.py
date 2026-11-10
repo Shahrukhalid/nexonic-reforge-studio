@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -60,20 +61,98 @@ class ToolResult:
 
 def run_tool(argv: list[str], timeout: int = 300, max_output: int = 32 * 1024**2,
              cwd: str | os.PathLike | None = None, extra_env: dict[str, str] | None = None) -> ToolResult:
-    """Run an *analysis tool* (never the target) with no shell, a timeout and an output cap."""
+    """Run an *analysis tool* (never the target) with no shell, a timeout and an output cap
+    enforced continuously during execution to prevent resource exhaustion."""
     t0 = time.time()
     env = {k: v for k, v in os.environ.items() if not k.upper().endswith(("_API_KEY", "_TOKEN", "_SECRET"))}
     env.update(extra_env or {})
     try:
-        proc = subprocess.run(argv, capture_output=True, timeout=timeout, cwd=cwd, env=env,
-                              stdin=subprocess.DEVNULL, shell=False)
-        out, err, trunc = proc.stdout, proc.stderr, False
-        if len(out) > max_output:
-            out, trunc = out[:max_output], True
-        return ToolResult(argv, proc.returncode, out.decode("utf-8", "replace"),
-                          err[:65536].decode("utf-8", "replace"), time.time() - t0, False, trunc)
-    except subprocess.TimeoutExpired as e:
-        return ToolResult(argv, None, (e.stdout or b"")[:65536].decode("utf-8", "replace"),
-                          "timeout", time.time() - t0, True)
+        proc = subprocess.Popen(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            cwd=cwd,
+            env=env,
+            shell=False,
+        )
     except OSError as e:
         return ToolResult(argv, None, "", str(e), time.time() - t0)
+
+    out_chunks: list[bytes] = []
+    err_chunks: list[bytes] = []
+    out_len = 0
+    err_len = 0
+    max_err = 65536
+    truncated = False
+    timed_out = False
+
+    def reader(stream, chunks, limit, is_out):
+        nonlocal out_len, err_len, truncated
+        try:
+            while True:
+                chunk = stream.read(8192)
+                if not chunk:
+                    break
+                if is_out:
+                    if out_len + len(chunk) > limit:
+                        allowed = max(0, limit - out_len)
+                        if allowed:
+                            chunks.append(chunk[:allowed])
+                            out_len += allowed
+                        truncated = True
+                        try:
+                            proc.terminate()
+                        except Exception:
+                            pass
+                        break
+                    chunks.append(chunk)
+                    out_len += len(chunk)
+                else:
+                    if err_len + len(chunk) > limit:
+                        allowed = max(0, limit - err_len)
+                        if allowed:
+                            chunks.append(chunk[:allowed])
+                            err_len += allowed
+                        break
+                    chunks.append(chunk)
+                    err_len += len(chunk)
+        finally:
+            stream.close()
+
+    t_out = threading.Thread(target=reader, args=(proc.stdout, out_chunks, max_output, True))
+    t_err = threading.Thread(target=reader, args=(proc.stderr, err_chunks, max_err, False))
+    t_out.daemon = True
+    t_err.daemon = True
+    t_out.start()
+    t_err.start()
+
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        try:
+            proc.wait(timeout=2.0)
+        except Exception:
+            pass
+
+    t_out.join(timeout=1.0)
+    t_err.join(timeout=1.0)
+
+    out_bytes = b"".join(out_chunks)
+    err_bytes = b"".join(err_chunks)
+    err_str = "timeout" if timed_out else err_bytes.decode("utf-8", "replace")
+
+    return ToolResult(
+        argv,
+        proc.returncode if not timed_out else None,
+        out_bytes.decode("utf-8", "replace"),
+        err_str,
+        time.time() - t0,
+        timed_out,
+        truncated,
+    )
