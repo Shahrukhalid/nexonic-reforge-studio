@@ -304,8 +304,10 @@ class ApplicationExplorerPage(Page):
         self.lbl_conf.setText("")
         while self.tech_container.count():
             item = self.tech_container.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget() if item else None
+            if w:
+                w.setParent(None)
+                w.deleteLater()
 
     # ---- Data Loading --------------------------------------------------------
     def _load_project(self, pid: int):

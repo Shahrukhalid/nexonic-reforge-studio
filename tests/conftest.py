@@ -21,6 +21,19 @@ def reforge_home(tmp_path, monkeypatch):
     return tmp_path / "home"
 
 
+@pytest.fixture(autouse=True)
+def flush_qt_events():
+    yield
+    try:
+        from PySide6.QtCore import QCoreApplication
+        app = QCoreApplication.instance()
+        if app:
+            app.sendPostedEvents()
+            app.processEvents()
+    except Exception:
+        pass
+
+
 @pytest.fixture
 def db(reforge_home):
     from reforge.core.db import Database
