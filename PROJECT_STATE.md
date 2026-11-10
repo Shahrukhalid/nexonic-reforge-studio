@@ -1,6 +1,6 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.8.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.9.0 · Publisher: Nexonic Technologies_
 
 ## Release Provenance & Investigation
 - **v0.7.0 Release Tag Verification**:
@@ -66,19 +66,17 @@ _Last updated: 2026-11-10 · v0.8.0 · Publisher: Nexonic Technologies_
       SHA-256: `e9164eac7f817311a3ebf5f86e9908a9fdc2a6bfb10dcb4f7868886078814508`
     - `SHA256SUMS.txt` (112 bytes)
 
-## Current Milestone: v0.8.0
-**v0.8.0 — Real-World Ground-Truth Validation, Genuine Decompiler Integration & Evidence Task Planning.**
-- Ground Truth Benchmarking: Legally authorized reference targets (C, Java, C#) with documented behavior to evaluate real decompiler precision, recall, and false positives.
-- Genuine Decompiler Integration: Distinguishes authentic engine output from heuristic clean-room synthesis with explicit confidence scores and cyclomatic complexity.
-- Source-to-Assembly Evidence Navigation: Line-by-line mapping connecting pseudocode statements directly back to disassembly instructions.
-- Implementation Task Planner & Human Review Checklist: Discrete actionable tasks derived strictly from confirmed findings, with explicit operator review for unknown boundaries.
-- Realistic Behavioral Test Generation: Zero fabricated endpoints; strict segregation of verified contracts, hypothesized behaviors, and mock boundaries.
-- Structural Binary Diffing: Normalized instruction abstraction and CFG topology matching for renamed symbols and relocated functions.
-- Release Provenance & Immutability: Protection against tag rewriting and fail-closed CI gating.
+## Current Milestone: v0.9.0
+**v0.9.0 — Multi-Engine Decompilation Orchestration, Interactive Control-Flow Graph (CFG) Visualizer, and Full-Stack Reconstructed Project Toolchains.**
+- Interactive Control Flow Graph (CFG) Visualizer: Graph modeling of basic blocks, branch edges (conditional true/false, unconditional, calls), cyclomatic complexity ($M = E - N + 2$), DFS natural loop detection, colored edge rendering, ASCII flow diagram, Graphviz DOT export, and block-to-code navigation.
+- Multi-Engine Decompilation Orchestration: Unified interface aggregating and switching between Ghidra (NSA), JADX, ILSpy, and clean-room DecompilationSynthesizer with live engine selector and side-by-side diff comparison.
+- Full-Stack Reconstructed Project Toolchains: Host compiler and build toolchain discovery (GCC, Clang, MSVC, CMake, Make, Cargo/Rust, Go, Python, .NET SDK, JDK/javac/Maven, Node.js/npm).
+- Multi-Language Scaffolding & Building: End-to-end scaffolding, building, testing, and packaging for C/C++, Java, and C# alongside existing Python, TypeScript, Rust, and Go projects with cryptographic SHA-256 digests and `build_manifest.json`.
+- UI Integration: Embedded CFG tab and engine switcher in Application Explorer, plus live host toolchains discovery status and multi-stack compilation in Build & Export.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite storage, thread-pool background task runner, PyInstaller packaging.
-- GUI: 12-section navigation; all 12 pages fully implemented: Dashboard, Import, Analysis Workspace, Application Explorer, Visual UI Explorer, AI Assistant, Reconstruction Studio (4-step wizard with Tasks & Review), Source Workspace, Build & Export, Tool Manager, Activity & Logs, Settings. 0 placeholder pages.
+- GUI: 12-section navigation; all 12 pages fully implemented: Dashboard, Import, Analysis Workspace, Application Explorer (Structure, Dependencies, Endpoints, Strings, Call Graph, Binary Diff, CFG Visualizer), Visual UI Explorer, AI Assistant, Reconstruction Studio (4-step wizard with Tasks & Review), Source Workspace, Build & Export, Tool Manager, Activity & Logs, Settings. 0 placeholder pages.
 - Safety & Sandboxing: Bounded real-time subprocess streaming reader, strict separation between `extracted/` and clean-room `reconstructed/`, zero host execution of analyzed binaries, DPAPI/Keychain credential encryption, zip slip/bomb protection.
 - Reverse-Engineering Adapters: Ghidra 12.2, Detect It Easy, radare2, Rizin, WABT, capa, FLOSS, GoReSym, JADX, ILSpy, pycdc, apktool, binwalk, angr, assetripper, ImHex launcher, Frida device discovery.
 - AI & Clean-Room: BYOK provider integration, streaming responses, evidence context synthesis, independent scaffolding, test runner.
@@ -87,10 +85,10 @@ _Last updated: 2026-11-10 · v0.8.0 · Publisher: Nexonic Technologies_
 - Release Integrity: SHA-256 checksum aggregation verified across all target platforms with automated release gate, tag immutability, and branch protection enforcement.
 
 ## Test Results
-- Total automated tests: 125 tests across unit, GUI, adapters, cache, synthesizer, ground truth, tasks, binary diffing, test generator, and export capabilities (113 passed, 12 integration skips locally).
+- Total automated tests: 133 tests across unit, GUI, adapters, cache, synthesizer, ground truth, tasks, binary diffing, test generator, CFG visualizer, decompiler orchestrator, and toolchains (121 passed, 12 integration skips locally).
 - `ruff check`: All checks clean.
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.7.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `cad6093`.
-- v0.8.0 development completed, tested, and staged for pull request validation.
+- v0.8.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `c26df0f`.
+- v0.9.0 development completed, tested, and staged for pull request validation.

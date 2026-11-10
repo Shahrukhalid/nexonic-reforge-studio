@@ -557,6 +557,155 @@ serde_json = "1.0"
         files["main.go"] = f'package main\n\nimport (\n\t"fmt"\n\t"{safe_name}/client"\n)\n\nfunc main() {{\n\tc := client.NewClient("http://localhost:8080")\n\tfmt.Printf("Starting clean-room {project_name}: %s\\n", c.Status())\n}}\n'
         files["main_test.go"] = f'package main\n\nimport (\n\t"testing"\n\t"{safe_name}/client"\n)\n\nfunc TestClientStatus(t *testing.T) {{\n\tc := client.NewClient("http://localhost:8080")\n\tif c.Status() != "ok" {{\n\t\tt.Fail()\n\t}}\n}}\n'
 
+    elif stack in ("c", "cpp"):
+        files["CMakeLists.txt"] = f"""cmake_minimum_required(VERSION 3.15)
+project({safe_name} C)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+include_directories(include)
+
+add_library({safe_name}_core STATIC src/core.c)
+add_executable({safe_name} src/main.c)
+target_link_libraries({safe_name} PRIVATE {safe_name}_core)
+
+enable_testing()
+add_executable(test_runner tests/test_core.c)
+target_link_libraries(test_runner PRIVATE {safe_name}_core)
+add_test(NAME CoreTests COMMAND test_runner)
+"""
+        files["README.md"] = f"# {project_name}\n\nClean-room C/C++ reimplementation.\n\n## Build & Test\n```bash\ncmake -B build\ncmake --build build --config Release\nctest --test-dir build\n```\n"
+        files["include/core.h"] = f"""#ifndef {safe_name.upper()}_CORE_H
+#define {safe_name.upper()}_CORE_H
+
+typedef struct {{
+    char name[64];
+    char version[16];
+    int enabled;
+}} AppConfig;
+
+AppConfig core_init(const char* app_name);
+int core_execute(const AppConfig* config, const char* action);
+
+#endif
+"""
+        files["src/core.c"] = f"""#include "core.h"
+#include <string.h>
+
+AppConfig core_init(const char* app_name) {{
+    AppConfig cfg;
+    strncpy(cfg.name, app_name ? app_name : "{project_name}", sizeof(cfg.name) - 1);
+    cfg.name[sizeof(cfg.name) - 1] = '\\0';
+    strncpy(cfg.version, "0.1.0", sizeof(cfg.version) - 1);
+    cfg.version[sizeof(cfg.version) - 1] = '\\0';
+    cfg.enabled = 1;
+    return cfg;
+}}
+
+int core_execute(const AppConfig* config, const char* action) {{
+    if (!config || !config->enabled) return -1;
+    return 0;
+}}
+"""
+        files["src/main.c"] = f"""#include <stdio.h>
+#include "core.h"
+
+int main(int argc, char** argv) {{
+    AppConfig cfg = core_init("{project_name}");
+    printf("Initialized clean-room %s v%s\\n", cfg.name, cfg.version);
+    return 0;
+}}
+"""
+        files["tests/test_core.c"] = """#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include "core.h"
+
+int main(void) {
+    AppConfig cfg = core_init("TestApp");
+    assert(strcmp(cfg.name, "TestApp") == 0);
+    assert(cfg.enabled == 1);
+    int rc = core_execute(&cfg, "test");
+    assert(rc == 0);
+    printf("All C core unit tests passed successfully.\\n");
+    return 0;
+}
+"""
+
+    elif stack == "java":
+        files["pom.xml"] = f"""<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.reforge.cleanroom</groupId>
+    <artifactId>{safe_name}</artifactId>
+    <version>0.1.0</version>
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
+"""
+        files["README.md"] = f"# {project_name}\n\nClean-room Java reimplementation.\n\n## Build & Test\n```bash\nmvn compile\nmvn test\nmvn package\n```\n"
+        files["src/main/java/com/reforge/cleanroom/App.java"] = f"""package com.reforge.cleanroom;
+
+public class App {{
+    private final String appName;
+    private final String version;
+    private boolean running;
+
+    public App(String appName) {{
+        this.appName = appName;
+        this.version = "0.1.0";
+        this.running = false;
+    }}
+
+    public void start() {{
+        this.running = true;
+    }}
+
+    public boolean isRunning() {{
+        return this.running;
+    }}
+
+    public String getStatus() {{
+        return "ok";
+    }}
+
+    public static void main(String[] args) {{
+        App app = new App("{project_name}");
+        app.start();
+        System.out.println("Started clean-room " + app.appName);
+    }}
+}}
+"""
+        files["src/test/java/com/reforge/cleanroom/AppTest.java"] = """package com.reforge.cleanroom;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class AppTest {
+    @Test
+    public void testLifecycle() {
+        App app = new App("TestApp");
+        assertFalse(app.isRunning());
+        app.start();
+        assertTrue(app.isRunning());
+        assertEquals("ok", app.getStatus());
+    }
+}
+"""
+
     else:
         files[f"{safe_name}.csproj"] = f"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>

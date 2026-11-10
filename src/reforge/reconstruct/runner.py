@@ -32,6 +32,23 @@ def detect_runner_commands(project_dir: Path) -> dict[str, list[str]]:
         go = shutil.which("go") or "go"
         cmds["test"] = [go, "test", "./..."]
         cmds["build"] = [go, "build", "."]
+    elif list(project_dir.glob("*.csproj")) or list(project_dir.glob("*.sln")):
+        dotnet = shutil.which("dotnet") or "dotnet"
+        cmds["test"] = [dotnet, "test"]
+        cmds["build"] = [dotnet, "build"]
+    elif (project_dir / "pom.xml").is_file():
+        mvn = shutil.which("mvn") or shutil.which("mvn.cmd") or "mvn"
+        cmds["test"] = [mvn, "test"]
+        cmds["build"] = [mvn, "compile"]
+    elif (project_dir / "build.gradle").is_file():
+        gradle = shutil.which("gradle") or shutil.which("gradle.bat") or "gradle"
+        cmds["test"] = [gradle, "test"]
+        cmds["build"] = [gradle, "build"]
+    elif (project_dir / "CMakeLists.txt").is_file():
+        cmake = shutil.which("cmake") or "cmake"
+        ctest = shutil.which("ctest") or "ctest"
+        cmds["build"] = [cmake, "--build", "dist/cmake_build", "--config", "Release"]
+        cmds["test"] = [ctest, "--test-dir", "dist/cmake_build", "--output-on-failure"]
     else:
         # Default Python test runner fallback if .py files exist
         if any(project_dir.rglob("*.py")):
@@ -44,9 +61,11 @@ def run_project_tests(project_dir: Path, timeout: int = 120) -> ToolResult:
     cmds = detect_runner_commands(project_dir)
     if "test" not in cmds:
         return ToolResult(
-            argv=[], returncode=1, stdout="",
-            stderr="No supported test runner found (missing pyproject.toml, package.json, Cargo.toml, or go.mod).",
-            duration=0.0
+            argv=[],
+            returncode=1,
+            stdout="",
+            stderr="No supported test runner found (missing pyproject.toml, package.json, Cargo.toml, go.mod, *.csproj, pom.xml, or CMakeLists.txt).",
+            duration=0.0,
         )
     extra_env: dict[str, str] = {}
     src_path = str(project_dir / "src")
@@ -61,8 +80,10 @@ def run_project_build(project_dir: Path, timeout: int = 180) -> ToolResult:
     cmds = detect_runner_commands(project_dir)
     if "build" not in cmds:
         return ToolResult(
-            argv=[], returncode=1, stdout="",
+            argv=[],
+            returncode=1,
+            stdout="",
             stderr="No supported build command found.",
-            duration=0.0
+            duration=0.0,
         )
     return run_tool(cmds["build"], cwd=project_dir, timeout=timeout)

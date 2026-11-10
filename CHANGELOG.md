@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0] - 2026-11-10
+### Added
+- **Interactive Control Flow Graph (CFG) Visualizer**:
+  - `CFGGraph`: Structured graph modeling of function control flow, basic block decomposition, branch classification (conditional true/taken, conditional false/fallthrough, unconditional jump, call, return), cyclomatic complexity ($M = \max(1, E - N + 2)$), and DFS natural loop / back-edge detection.
+  - `CFGVisualizerWidget`: Interactive PySide6 component in Application Explorer featuring responsive block cards, colored branch arrows, loop-head badges, text filtering, ASCII/Unicode flow diagram rendering, and Graphviz DOT exporter.
+  - Interactive CFG-to-Code navigation: clicking any basic block jumps and centers the code editor at that address.
+- **Multi-Engine Decompilation Orchestration**:
+  - `DecompilerOrchestrator`: Unified interface aggregating decompiler outputs from Ghidra (NSA), JADX, ILSpy, and clean-room DecompilationSynthesizer.
+  - Dynamic engine selection in Application Explorer (`Auto`, `Ghidra`, `JADX`, `ILSpy`, `Synthesizer`) with live switching, provenance banners, and multi-engine similarity diff comparison.
+- **Full-Stack Reconstructed Project Toolchains (M9-M10)**:
+  - `HostToolchain` discovery engine (`reforge.reconstruct.toolchains`): Probes and detects installed native compiler toolchains across GCC, Clang, MSVC, CMake, Make, Cargo/Rust, Go, Python, .NET SDK (dotnet), JDK/javac/Maven, and Node.js/npm.
+  - Expanded native builder (`reforge.reconstruct.builder`): Compiles clean-room projects for C/C++ (via CMake / GCC / Clang / MSVC), C# / .NET (via `dotnet build` / `publish`), Java (via Maven / Gradle / javac / jar), Rust, Go, Python, and TypeScript into standalone desktop binaries and packages with SHA-256 digests and `build_manifest.json`.
+  - Expanded test runner (`reforge.reconstruct.runner`): Automates testing for C/C++ (`ctest`), C# (`dotnet test`), Java (`mvn test` / `gradle test`), Rust (`cargo test`), Go (`go test`), and Python (`pytest`).
+  - Scaffolding templates (`reforge.reconstruct.scaffold`): Generates independent clean-room projects with multi-module source, unit tests, and build definitions for C/C++, Java, and C# alongside existing Python, TypeScript, Rust, and Go.
+  - Build & Export UI integration: Live host compiler discovery status, stack target selection, and one-click compilation.
+
 ## [0.8.0] - 2026-11-10
 ### Added
 - **Ground Truth Benchmarking & Accuracy Evaluation Engine**:

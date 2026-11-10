@@ -27,8 +27,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from ...analysis.decompiler_orchestrator import DecompilerOrchestrator, DecompilerOutput
 from ...analysis.diffing import BinaryDiffEngine, DiffResult, FunctionDiffItem
 from ..highlighter import CodeHighlighter
+from ..widgets.cfg_view import CFGVisualizerWidget
 from .common import Page
 
 
@@ -44,6 +46,8 @@ class ApplicationExplorerPage(Page):
         self.current_pseudo_code: str = ""
         self.current_asm_code: str = ""
         self.current_xrefs_code: str = ""
+        self.current_finding_dict: dict | None = None
+        self.engine_outputs: dict[str, dict[str, DecompilerOutput]] = {}
 
         # Top bar: project selection, tech badges, search
         top = QHBoxLayout()
@@ -225,9 +229,19 @@ class ApplicationExplorerPage(Page):
         self.btn_view_asm.clicked.connect(lambda: self._switch_code_view("assembly"))
         self.btn_view_xrefs = QPushButton("Callers / Callees")
         self.btn_view_xrefs.clicked.connect(lambda: self._switch_code_view("xrefs"))
+        self.btn_view_cfg = QPushButton("CFG View")
+        self.btn_view_cfg.clicked.connect(lambda: self.view_tabs.setCurrentWidget(self.cfg_widget))
         code_bar.addWidget(self.btn_view_pseudo)
         code_bar.addWidget(self.btn_view_asm)
         code_bar.addWidget(self.btn_view_xrefs)
+        code_bar.addWidget(self.btn_view_cfg)
+
+        code_bar.addWidget(QLabel("Engine:"))
+        self.engine_sel = QComboBox()
+        self.engine_sel.addItems(["Auto", "Ghidra", "JADX", "ILSpy", "Synthesizer"])
+        self.engine_sel.currentIndexChanged.connect(self._on_engine_changed)
+        code_bar.addWidget(self.engine_sel)
+
         code_bar.addStretch(1)
         btn_copy = QPushButton("Copy Code")
         btn_copy.clicked.connect(self._copy_code)
@@ -252,6 +266,11 @@ class ApplicationExplorerPage(Page):
         self.prop_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.prop_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.view_tabs.addTab(self.prop_table, "Attributes & Evidence")
+
+        # Control Flow Graph (CFG) Interactive Visualizer
+        self.cfg_widget = CFGVisualizerWidget()
+        self.cfg_widget.block_selected.connect(self._on_cfg_block_selected)
+        self.view_tabs.addTab(self.cfg_widget, "Control Flow Graph (CFG)")
 
         right_lay.addWidget(self.view_tabs, 1)
         split.addWidget(right)
@@ -292,6 +311,8 @@ class ApplicationExplorerPage(Page):
 
     def _clear_all(self):
         self.current_pid = None
+        self.current_finding_dict = None
+        self.cfg_widget.clear()
         self.tree_struct.clear()
         self.table_deps.setRowCount(0)
         self.table_endpoints.setRowCount(0)
@@ -317,6 +338,7 @@ class ApplicationExplorerPage(Page):
 
         rows = self.ctx.db.findings(pid)
         p = self.ctx.db.project(pid)
+        self.engine_outputs = DecompilerOrchestrator.extract_engine_outputs(rows, p.get("target", "") if p else "")
 
         # 1. Tech badges
         techs = sorted({r["key"] for r in rows if r["kind"] == "technology"})
@@ -610,6 +632,34 @@ class ApplicationExplorerPage(Page):
         if not self.current_asm_code and lang == "asm":
             self.current_asm_code = text
 
+        # Update CFG Visualizer if basic blocks or assembly instructions are present
+        if isinstance(val, dict):
+            if val.get("cfg_blocks"):
+                self.cfg_widget.load_from_blocks(
+                    val["cfg_blocks"],
+                    function_name=key,
+                    entry_addr=val.get("entry", "0x0"),
+                    arch=val.get("arch", "x86-64"),
+                )
+            elif val.get("instructions") or val.get("lines"):
+                raw_insns = val.get("lines") or [
+                    f"{i.get('addr', '')}: {i.get('mnemonic', '')} {i.get('op_str', '')}"
+                    for i in val.get("instructions", [])
+                    if isinstance(i, dict)
+                ]
+                if raw_insns:
+                    self.cfg_widget.load_from_assembly(
+                        raw_insns,
+                        function_name=key,
+                        arch=val.get("arch", "x86-64"),
+                        entry_addr=val.get("entry", "0x0"),
+                    )
+            else:
+                self.cfg_widget.clear()
+        else:
+            self.cfg_widget.clear()
+
+        self.current_finding_dict = r
         self.highlighter.set_language(lang)
         self.code_edit.setPlainText(text)
 
@@ -624,6 +674,45 @@ class ApplicationExplorerPage(Page):
             "Evidence": r.get("evidence"),
         }
         self._set_props(props)
+
+    def _on_engine_changed(self, _idx: int = 0):
+        """Switch decompiler engine output for currently inspected function."""
+        if not self.current_finding_dict:
+            return
+        key = self.current_finding_dict.get("key", "")
+        mode = self.engine_sel.currentText().lower()
+
+        engine = "auto"
+        for candidate in ["ghidra", "jadx", "ilspy", "synthesizer"]:
+            if candidate in mode:
+                engine = candidate
+                break
+
+        if engine == "auto":
+            for eng in ["ghidra", "jadx", "ilspy", "synthesizer"]:
+                if key in self.engine_outputs.get(eng, {}):
+                    engine = eng
+                    break
+
+        out = self.engine_outputs.get(engine, {}).get(key)
+        if out:
+            self.highlighter.set_language(out.language)
+            self.code_edit.setPlainText(out.code)
+            self.current_pseudo_code = out.code
+            self.lbl_prov.setText(f"PROVENANCE: {out.provenance.upper()}")
+            self.lbl_conf.setText(f"CONFIDENCE: {out.confidence.upper()}")
+            self.ctx.status(f"Decompiler engine switched to: {out.engine.upper()} for {key}")
+
+    def _on_cfg_block_selected(self, target_addr: str):
+        """Handle block selection in CFG widget by jumping to that address in Code/Disassembly."""
+        if not target_addr:
+            return
+        self.view_tabs.setCurrentIndex(0)
+        doc = self.code_edit.document()
+        cursor = doc.find(target_addr)
+        if not cursor.isNull():
+            self.code_edit.setTextCursor(cursor)
+            self.code_edit.centerCursor()
 
     def _switch_code_view(self, mode: str):
         if mode == "assembly" and self.current_asm_code:

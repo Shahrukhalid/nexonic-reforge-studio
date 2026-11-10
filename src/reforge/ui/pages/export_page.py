@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from ...export import export_cleanroom_archive, export_report_bundle, export_sbom
 from ...reconstruct.builder import build_reconstructed_project, detect_build_configuration
+from ...reconstruct.toolchains import detect_host_toolchains
 from .common import Page
 
 
@@ -120,16 +121,26 @@ class BuildExportPage(Page):
         self.lbl_binary_status = QLabel("Checking reconstructed project configuration…")
         l3.addWidget(self.lbl_binary_status)
 
+        # Host Toolchains Status
+        self.lbl_toolchains = QLabel("Scanning host compiler toolchains…")
+        self.lbl_toolchains.setStyleSheet("color: #61afef; font-size: 11px;")
+        l3.addWidget(self.lbl_toolchains)
+
         h3 = QHBoxLayout()
         h3.addWidget(QLabel("Build Target:"))
         self.target_bin_sel = QComboBox()
-        self.target_bin_sel.addItems(["Standalone Executable (Native Binary)", "Distributable Package (Wheel / Lib)"])
+        self.target_bin_sel.addItems(["Standalone Executable (Native Binary)", "Distributable Package (Wheel / Lib / Jar)"])
         h3.addWidget(self.target_bin_sel)
 
         btn_build_bin = QPushButton("Compile Reconstructed Project")
         btn_build_bin.setObjectName("Primary")
         btn_build_bin.clicked.connect(self._build_reconstructed_binary)
         h3.addWidget(btn_build_bin)
+
+        btn_refresh_tc = QPushButton("Scan Compilers")
+        btn_refresh_tc.clicked.connect(self._refresh_toolchains)
+        h3.addWidget(btn_refresh_tc)
+
         h3.addStretch(1)
         l3.addLayout(h3)
 
@@ -167,6 +178,16 @@ class BuildExportPage(Page):
         self.root.addStretch(1)
 
         self._check_packaging()
+        self._refresh_toolchains()
+
+    def _refresh_toolchains(self) -> None:
+        """Scan and display available host compilers and build toolchains."""
+        tcs = detect_host_toolchains(force_refresh=True)
+        avail = [f"{tc.name.split()[0]} ({tc.version})" for tc in tcs.values() if tc.available and tc.version]
+        if avail:
+            self.lbl_toolchains.setText("Detected Host Compilers: " + " · ".join(avail[:5]))
+        else:
+            self.lbl_toolchains.setText("Detected Host Compilers: Python (Standard)")
 
     # ---- Lifecycle -----------------------------------------------------------
     def refresh(self, select: int | None = None) -> None:
@@ -191,6 +212,7 @@ class BuildExportPage(Page):
             self.lbl_src_status.setText("No project loaded")
 
         self._check_packaging()
+        self._refresh_toolchains()
 
     def _on_project_changed(self, _idx: int):
         pid = self.proj_sel.currentData()
@@ -303,6 +325,7 @@ class BuildExportPage(Page):
 
     def _validate_packaging_config(self):
         self._check_packaging()
+        self._refresh_toolchains()
         root = Path(__file__).resolve().parents[3]
         from ... import __version__
 
