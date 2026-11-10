@@ -2,17 +2,21 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
+    QPushButton,
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
@@ -131,6 +135,17 @@ class ApplicationExplorerPage(Page):
         code_w = QFrame()
         code_lay = QVBoxLayout(code_w)
         code_lay.setContentsMargins(0, 0, 0, 0)
+        code_lay.setSpacing(4)
+
+        code_bar = QHBoxLayout()
+        code_bar.addStretch(1)
+        btn_copy = QPushButton("Copy Code")
+        btn_copy.clicked.connect(self._copy_code)
+        btn_save = QPushButton("Save Code to File…")
+        btn_save.clicked.connect(self._save_code_to_file)
+        code_bar.addWidget(btn_copy)
+        code_bar.addWidget(btn_save)
+        code_lay.addLayout(code_bar)
 
         self.code_edit = QPlainTextEdit()
         self.code_edit.setReadOnly(True)
@@ -467,3 +482,18 @@ class ApplicationExplorerPage(Page):
         for i in range(self.table_strings.rowCount()):
             match = q in self.table_strings.item(i, 0).text().lower()
             self.table_strings.setRowHidden(i, not match)
+
+    def _copy_code(self):
+        text = self.code_edit.toPlainText()
+        if text:
+            QApplication.clipboard().setText(text)
+            self.ctx.status("Code copied to clipboard.")
+
+    def _save_code_to_file(self):
+        text = self.code_edit.toPlainText()
+        if not text:
+            return
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Code to File", "code_snippet.txt")
+        if filename:
+            Path(filename).write_text(text, encoding="utf-8")
+            self.ctx.status(f"Saved code to {filename}")

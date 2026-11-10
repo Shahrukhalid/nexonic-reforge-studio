@@ -117,6 +117,10 @@ def create_pr(branch_name: str, title: str, body: str) -> dict:
         "base": "main",
     }
     pr = github_request("pulls", method="POST", data=pr_data)
+    try:
+        github_request(f"issues/{pr['number']}/labels", method="POST", data={"labels": ["auto-merge"]})
+    except Exception as e:
+        print(f"Warning adding auto-merge label: {e}")
     print(f"✓ Pull Request #{pr['number']} created: {pr['html_url']}")
     return pr
 
