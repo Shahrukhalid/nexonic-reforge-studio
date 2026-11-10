@@ -19,8 +19,14 @@ from ..analysis.orchestrator import Orchestrator
 from ..core.db import Database
 from ..core.safety import Limits
 from ..core.tasks import TaskManager
+from .pages.ai_page import AIAssistantPage
 from .pages.common import PlannedPage
+from .pages.explorer_page import ApplicationExplorerPage
+from .pages.export_page import BuildExportPage
 from .pages.main_pages import AnalysisPage, DashboardPage, ImportPage, LogsPage, SettingsPage, ToolsPage
+from .pages.reconstruct_page import ReconstructionStudioPage
+from .pages.ui_explorer_page import VisualUIExplorerPage
+from .pages.workspace_page import SourceWorkspacePage
 from .theme import qss
 
 log = logging.getLogger("reforge.ui")
@@ -46,19 +52,7 @@ class QtLogHandler(logging.Handler):
             pass
 
 
-PLANNED = [
-    ("Application Explorer", "Milestone 6", "Module, class, function, dependency and API-endpoint graph built from "
-     "analysis findings, with feature relationships."),
-    ("Visual UI Explorer", "Milestone 6", "Screen inventory from extracted resources (nibs/storyboards, XAML, "
-     "Android layouts, HTML) plus imported reference screenshots."),
-    ("AI Assistant", "Milestone 7", "Project-aware chat with BYOK providers (OpenRouter, Anthropic, OpenAI, Gemini) "
-     "and local models (Ollama, llama.cpp). Keys stored in macOS Keychain / Windows Credential Manager. "
-     "Paid usage requires explicit opt-in."),
-    ("Reconstruction Studio", "Milestone 8", "Feature selection, specification approval and clean-room project "
-     "generation with build/test loop. Generated code is always labelled as newly generated."),
-    ("Source Code Workspace", "Milestone 8", "Explorer, editor, search and diff for generated projects."),
-    ("Build & Export", "Milestone 9-10", "Source/project/report export and packaging of generated projects."),
-]
+PLANNED: list[tuple[str, str, str]] = []
 
 
 class AppContext:
@@ -135,7 +129,17 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.pages = {}
-        order = [DashboardPage, ImportPage, AnalysisPage]
+        order = [
+            DashboardPage,
+            ImportPage,
+            AnalysisPage,
+            ApplicationExplorerPage,
+            VisualUIExplorerPage,
+            AIAssistantPage,
+            ReconstructionStudioPage,
+            SourceWorkspacePage,
+            BuildExportPage,
+        ]
         for cls in order:
             self._add(cls(self.ctx))
         for title, ms, scope in PLANNED:
@@ -173,7 +177,10 @@ class MainWindow(QMainWindow):
         self.nav.blockSignals(False)
         self.stack.setCurrentIndex(idx)
         page = self.pages[title]
-        page.refresh(**kw) if kw else page.refresh()
+        try:
+            page.refresh(**kw) if kw else page.refresh()
+        except TypeError:
+            page.refresh()
 
     def _on_task_done(self, _tid, status, result):
         self.ctx.status(f"Analysis {status}" + (f": {result}" if status != "done" else ""))

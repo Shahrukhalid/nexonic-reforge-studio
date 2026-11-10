@@ -12,6 +12,7 @@ import json
 import os
 import shutil
 import ssl
+import sys
 import tempfile
 import urllib.request
 from collections.abc import Callable
@@ -20,7 +21,7 @@ from pathlib import Path
 
 from ..analysis.extract import extract_zip
 from ..core import paths
-from ..core.safety import Limits, UnsafeInput
+from ..core.safety import Limits, UnsafeInput, safe_member_path
 
 PACKS_FILE = Path(__file__).with_name("packs.json")
 PACK_LIMITS = Limits(max_files=150_000, max_total_bytes=6 * 1024**3, max_file_bytes=1024**3, max_ratio=400)
@@ -49,12 +50,26 @@ def is_installed(pack_id: str) -> bool:
     return (install_dir(pack_id) / ".reforge-pack.json").is_file()
 
 
+def host_os() -> str:
+    return {"darwin": "macos", "win32": "windows"}.get(sys.platform, "linux")
+
+
+def resolve_spec(spec: dict) -> dict:
+    resolved = dict(spec)
+    os_name = host_os()
+    if "platform_urls" in spec and os_name in spec["platform_urls"]:
+        plat = spec["platform_urls"][os_name]
+        resolved.update(plat)
+    return resolved
+
+
 def bin_dirs() -> list[str]:
     """Executable directories of installed packs (searched by registry.find_exe)."""
     out = []
     for pid, spec in packs().items():
         if is_installed(pid):
-            out += [str(install_dir(pid) / d) for d in spec.get("bin_dirs", [])]
+            eff = resolve_spec(spec)
+            out += [str(install_dir(pid) / d) for d in eff.get("bin_dirs", [])]
     if os.environ.get("GHIDRA_INSTALL_DIR"):
         out.append(str(Path(os.environ["GHIDRA_INSTALL_DIR"]) / "support"))
     return out
@@ -91,7 +106,7 @@ def download(url: str, dest: Path, progress: Callable[[int, int], None] | None =
 
 
 def install(pack_id: str, progress: Callable[[int, int], None] | None = None, spec: dict | None = None) -> Path:
-    spec = spec or packs()[pack_id]
+    spec = resolve_spec(spec or packs()[pack_id])
     dest = install_dir(pack_id)
     with tempfile.TemporaryDirectory(dir=tools_dir()) as tmp:
         archive = Path(tmp) / "download.bin"
@@ -101,9 +116,17 @@ def install(pack_id: str, progress: Callable[[int, int], None] | None = None, sp
             raise ChecksumMismatch(f"{pack_id}: expected {spec['sha256']}, got {got}")
         staging = Path(tmp) / "staging"
         staging.mkdir()
-        if spec.get("format", "zip") != "zip":
-            raise ValueError(f"unsupported pack format: {spec.get('format')}")
-        extract_zip(archive, staging, PACK_LIMITS, preserve_exec=True)
+        fmt = spec.get("format", "zip")
+        if fmt == "zip":
+            extract_zip(archive, staging, PACK_LIMITS, preserve_exec=True)
+        elif fmt in ("tar.gz", "tar"):
+            import tarfile
+            with tarfile.open(archive, "r:*") as t:
+                for m in t.getmembers():
+                    safe_member_path(staging, m.name)
+                t.extractall(staging)
+        else:
+            raise ValueError(f"unsupported pack format: {fmt}")
         (staging / ".reforge-pack.json").write_text(json.dumps(
             {"id": pack_id, "version": spec["version"], "sha256": got, "url": spec["url"]}, indent=1))
         if dest.exists():

@@ -11,6 +11,7 @@ from PySide6.QtGui import QColor, QFontDatabase
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -483,25 +484,41 @@ class ToolsPage(Page):
         self.table.setAlternatingRowColors(True)
         self.root.addWidget(self.table, 1)
 
-    # ---- tool packs / Ghidra setup ------------------------------------------
+    # ---- verified tool packs setup ------------------------------------------
     def _setup_panel(self) -> QFrame:
         f = QFrame()
         f.setObjectName("Card")
         lay = QVBoxLayout(f)
         lay.setContentsMargins(16, 12, 16, 12)
         head = QHBoxLayout()
-        t = QLabel("Ghidra 12.2 tool pack")
+        t = QLabel("Verified Tool Packs")
         t.setStyleSheet("font-weight:600")
         head.addWidget(t)
+
+        from ...tools import toolpacks
+        self.pack_sel = QComboBox()
+        for pid, spec in toolpacks.packs().items():
+            self.pack_sel.addItem(f"{spec['name']} {spec['version']}", pid)
+        self.pack_sel.currentIndexChanged.connect(self._refresh_setup)
+        head.addWidget(self.pack_sel)
         head.addStretch(1)
-        self.b_install = QPushButton("Install (≈550 MB, SHA-256 verified)")
+
+        self.b_install = QPushButton("Install")
         self.b_install.setObjectName("Primary")
-        self.b_install.clicked.connect(self._install_ghidra)
+        self.b_install.clicked.connect(self._install_pack)
+        self.b_uninstall = QPushButton("Uninstall")
+        self.b_uninstall.clicked.connect(self._uninstall_pack)
         self.b_build = QPushButton("Build decompiler")
         self.b_build.clicked.connect(self._build_natives)
+        self.b_notices = QPushButton("Licenses & Notices…")
+        self.b_notices.clicked.connect(self._show_notices)
+
         head.addWidget(self.b_install)
+        head.addWidget(self.b_uninstall)
         head.addWidget(self.b_build)
+        head.addWidget(self.b_notices)
         lay.addLayout(head)
+
         self.setup_status = QLabel("")
         self.setup_status.setObjectName("Muted")
         self.setup_status.setWordWrap(True)
@@ -515,32 +532,80 @@ class ToolsPage(Page):
         self.ctx.bridge.done.connect(self._setup_done)
         return f
 
-    def _refresh_setup(self):
-        from ...tools.setup import ghidra_status
-        s = ghidra_status()
-        parts = [("Ghidra: installed" if s["installed"] else "Ghidra: not installed"),
-                 (f"JDK {s['java_required']}+: {s['java']}" if s["java"] else
-                  f"JDK {s['java_required']}+: MISSING (macOS: brew install openjdk@{s['java_required']})")]
-        if s["installed"]:
-            parts.append(f"decompiler ({s['platform']}): " + ("OK" if s["decompiler"] else "missing - click Build decompiler"))
-        self.setup_status.setText("   ·   ".join(parts))
-        busy = self._setup_task is not None
-        self.b_install.setEnabled(not busy and not s["installed"])
-        self.b_build.setEnabled(not busy and s["installed"] and not s["decompiler"] and bool(s["java"]))
+    def _selected_pid(self) -> str:
+        return self.pack_sel.currentData() or "ghidra"
 
-    def _install_ghidra(self):
+    def _refresh_setup(self):
         from ...tools import toolpacks
+        from ...tools.setup import ghidra_status
+        pid = self._selected_pid()
+        spec = toolpacks.packs().get(pid, {})
+        installed = toolpacks.is_installed(pid)
+        busy = self._setup_task is not None
+
+        if pid == "ghidra":
+            s = ghidra_status()
+            parts = [("Ghidra: installed" if s["installed"] else "Ghidra: not installed"),
+                     (f"JDK {s['java_required']}+: {s['java']}" if s["java"] else
+                      f"JDK {s['java_required']}+: MISSING (macOS: brew install openjdk@{s['java_required']})")]
+            if s["installed"]:
+                parts.append(f"decompiler ({s['platform']}): " + ("OK" if s["decompiler"] else "missing - click Build decompiler"))
+            self.b_build.show()
+            self.b_build.setEnabled(not busy and s["installed"] and not s["decompiler"] and bool(s["java"]))
+        else:
+            self.b_build.hide()
+            status_text = "installed" if installed else "not installed"
+            req = f" · Requires: {spec.get('requires')}" if spec.get("requires") else ""
+            size = f" (≈{spec.get('size_hint_mb', 50)} MB, SHA-256 verified)"
+            parts = [f"{spec.get('name', pid)}: {status_text}{size if not installed else ''}{req}"]
+
+        self.setup_status.setText("   ·   ".join(parts))
+        self.b_install.setText("Re-install / Repair" if installed else "Install (SHA-256 verified)")
+        self.b_install.setEnabled(not busy)
+        self.b_uninstall.setEnabled(not busy and installed)
+
+    def _install_pack(self):
+        from ...tools import toolpacks
+        pid = self._selected_pid()
+        spec = toolpacks.packs()[pid]
         self.setup_bar.setRange(0, 100)
         self.setup_bar.show()
 
         def job(tctx):
             def prog(done, total):
-                tctx.progress(int(done * 100 / total) if total else 0, f"Downloading Ghidra {done >> 20} MB")
-            return str(toolpacks.install("ghidra", prog))
+                tctx.progress(int(done * 100 / total) if total else 0,
+                              f"Downloading {spec.get('name', pid)} ({done >> 20} MB)")
+            return str(toolpacks.install(pid, prog))
+
         self._setup_task = self.ctx.tasks.submit(
             job, on_progress=lambda p, m: self.ctx.bridge.progress.emit(self._setup_task or "", p, m),
             on_done=lambda t, s, r: self.ctx.bridge.done.emit(t, s, r))
         self._refresh_setup()
+
+    def _uninstall_pack(self):
+        from ...tools import toolpacks
+        pid = self._selected_pid()
+        if QMessageBox.question(self, "Uninstall", f"Uninstall {pid} tool pack?") == QMessageBox.Yes:
+            toolpacks.uninstall(pid)
+            self.ctx.status(f"Uninstalled {pid}")
+            self.refresh()
+
+    def _show_notices(self):
+        root = Path(__file__).resolve().parents[3]
+        notices_file = root / "THIRD_PARTY_NOTICES.md"
+        text = notices_file.read_text(errors="replace") if notices_file.is_file() else "No notices file found."
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Third-Party Notices & Licensing")
+        dlg.resize(700, 500)
+        v = QVBoxLayout(dlg)
+        ed = QPlainTextEdit()
+        ed.setReadOnly(True)
+        ed.setPlainText(text)
+        v.addWidget(ed)
+        btn = QPushButton("Close")
+        btn.clicked.connect(dlg.accept)
+        v.addWidget(btn)
+        dlg.exec()
 
     def _build_natives(self):
         from ...tools.setup import build_ghidra_natives

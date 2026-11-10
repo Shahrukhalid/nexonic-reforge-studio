@@ -10,5 +10,43 @@
   "bin_dirs": ["ghidra_12.2_PUBLIC/support"],
   "requires": "JDK 25+ (Ghidra/application.properties: application.java.min=25)",
   "size_hint_mb": 460
+ },
+ "jadx": {
+  "name": "JADX",
+  "version": "1.5.0",
+  "license": "Apache-2.0",
+  "url": "https://github.com/skylot/jadx/releases/download/v1.5.0/jadx-1.5.0.zip",
+  "sha256": "c5a713fa4800cbb9e6df85ced1bef95ba329040c95cb87d54465f108483e4ef9",
+  "format": "zip",
+  "platforms": ["macos", "windows", "linux"],
+  "bin_dirs": ["bin"],
+  "requires": "JRE 11+",
+  "size_hint_mb": 100
+ },
+ "wabt": {
+  "name": "WABT",
+  "version": "1.0.42",
+  "license": "Apache-2.0",
+  "format": "tar.gz",
+  "platforms": ["macos", "windows", "linux"],
+  "bin_dirs": ["bin"],
+  "platform_urls": {
+   "windows": {
+    "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42-windows-x64.tar.gz",
+    "sha256": "62f1eb2b51aa57cf0f0b8ba333bf2c72a049930aa9c5de01dcad271c4fe48c88",
+    "bin_dirs": ["wabt-1.0.42/bin"]
+   },
+   "macos": {
+    "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42-macos-arm64.tar.gz",
+    "sha256": "3f654779b436c628db3ca4323c51538815f5fbc887a6d5f3bb1c18d36281e240",
+    "bin_dirs": ["wabt-1.0.42/bin"]
+   },
+   "linux": {
+    "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42-linux-x64.tar.gz",
+    "sha256": "84895407a6bbb80e918f33b16b2fb2206021c150b6bc9ff6f761263a745ab131",
+    "bin_dirs": ["wabt-1.0.42/bin"]
+   }
+  },
+  "size_hint_mb": 15
  }
 }

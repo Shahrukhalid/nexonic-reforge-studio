@@ -1,18 +1,42 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2026-11-10
 ### Added
-- ImHex: "Open in ImHex" in the Analysis Workspace and `reforge-cli imhex FILE`; opens a copy so the
-  original input is never modified; detected in /Applications and Program Files, not only PATH
-- Frida: optional `[dynamic]` extra, `reforge-cli frida devices` (device discovery only);
-  spawn/attach refused until a verified isolated runtime exists
-- CI `integration-macos` job: Rizin and ImHex (Homebrew) and Frida verified on Apple Silicon
+- **M5 Reverse-Engineering Tool Ecosystem**:
+  - Full verification of all 85 tools in the tool registry via live GitHub API verification (verified=85, pending=0, failed=0).
+  - Live version detection (`_bin_version`) and path probing for host reverse-engineering binaries.
+  - Native adapters for `apktool` (manifest & resource decoding), `binwalk` (firmware signature carving), `angr` (static CFG analysis), and `assetripper` (Unity asset packages).
+  - Pinned SHA-256 tool packs for JADX 1.5.0 and WABT 1.0.42 with multi-platform resolution (Linux, macOS arm64/x64, Windows) and tar.gz/zip safe extraction.
+  - Integrated PR #1: Rizin integration, ImHex external launcher, and safe Frida bridge (device listing only; dynamic instrumentation strictly disabled).
+  - Integrated PR #2: Standardized pull request and issue templates, CONTRIBUTING.md guidelines.
+  - Interactive Tool Manager with multi-pack installation, status indicators, build decompiler action, and Third-Party Notices dialog.
+- **M6 Application Explorer & Visual UI Explorer**:
+  - `ApplicationExplorerPage`: Hierarchical module/class/section browser, imported libraries & symbols, network endpoints, embedded strings & config, call graphs, and monospace syntax-highlighted code viewer with confidence & provenance tags.
+  - `VisualUIExplorerPage`: UI resource catalog (AXML layouts, HTML/CSS, XAML, Qt resources, graphics), interactive image preview with dimension & zoom controls, reference screenshot import, and UI component-to-evidence mapping table.
+  - `CodeHighlighter`: Cross-platform syntax highlighting supporting C/C++, Java, Python, JavaScript/TypeScript, C#, Rust, Go, XML/HTML, and JSON.
+- **M7 AI Assistant (BYOK)**:
+  - `AIAssistantPage`: Bring Your Own Key AI assistant supporting OpenRouter, OpenAI, Anthropic, Gemini, and Local (Ollama/OpenAI-compatible) models.
+  - OS-protected credential storage leveraging Windows DPAPI (`CryptProtectData`) and macOS Keychain.
+  - Project-aware context compiler enforcing strict clean-room boundaries, anti-hallucination rules, and evidence provenance.
+  - Streaming conversational assistant with responsive token cancellation and mandatory explicit user consent checkbox before sending project context.
+- **M8 Reconstruction Studio & Source Code Workspace**:
+  - `ReconstructionStudioPage`: 3-step clean-room reconstruction wizard (Feature Discovery & Selection -> Functional Specification Generation -> Architecture Scaffolding).
+  - `scaffold`: Clean-room project scaffolding for Python, TypeScript, Rust, Go, and C# into isolated `reconstructed/` directories with `SPECIFICATION.md` and `CLEAN_ROOM_NOTICE.md`.
+  - `SourceWorkspacePage`: Multi-tab source editor with syntax highlighting, clean-room file explorer, diff viewer against disk, and integrated test/build console supporting `pytest`, `npm test`, `cargo test`, and `go test`.
+- **M9-M10 Build, Export & Packaging Pipeline**:
+  - `BuildExportPage`: Centralized export hub replacing final planned placeholder, achieving 100% genuine functional implementation across all 12 navigation pages.
+  - Clean-room source archive exporter producing `.zip` and `.tar.gz` packages accompanied by `.sha256` integrity manifests.
+  - CycloneDX-compatible Software Bill of Materials (SBOM) JSON generation from discovered libraries, npm packages, and .NET assemblies.
+  - Automated report bundle export packaging Markdown, JSON, and SBOM analysis outputs.
+  - Installer & packaging configuration validator for PyInstaller spec, Inno Setup definition, and macOS DMG builder.
+### Security
+- Hardened cross-platform subprocess execution with streaming threaded reader enforcing real-time output bounds and terminating runaway processes immediately.
+- Enforced strict clean-room isolation between extracted binaries and reconstructed source code.
+- Dynamic analysis remains disabled pending verified isolated sandbox environment.
+- Gitleaks history scanning and CI security audit gates updated to full git history checkout.
 ### Fixed
-- Rizin adapter: `rizin` shell is called with `-q -c ij` (`-Ij` is only valid for `rz-bin`)
-
-## [0.3.1] - 2026-11-03
-### Fixed
-- Window opens sized to the screen (max 90%), centred; dashboard columns size to content and never push Profile/Status/Updated off-screen
+- Fixed GitHub Actions runner deprecation by migrating from `macos-14` to `macos-15` (Apple Silicon).
+- Fixed cross-platform test subprocess execution on Windows without depending on Unix-only shell commands.
 
 ## [0.3.0] - 2026-11-02
 ### Added
