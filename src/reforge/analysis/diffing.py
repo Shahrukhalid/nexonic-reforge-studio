@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -16,9 +17,11 @@ class FunctionDiffItem:
     address_a: str | None
     address_b: str | None
     status: str  # 'identical', 'modified', 'added', 'removed'
-    match_type: str  # 'exact_match', 'symbol_match', 'heuristic_match', 'unmatched'
+    match_type: str  # 'exact_match', 'symbol_match', 'address_match', 'structural_match', 'uncertain_match', 'unmatched'
     confidence: float
     similarity: float
+    match_reason: str = ""
+    is_uncertain: bool = False
     assembly_a: list[str] = field(default_factory=list)
     assembly_b: list[str] = field(default_factory=list)
     pseudocode_a: str = ""
@@ -154,27 +157,86 @@ class BinaryDiffEngine:
         }
 
     @classmethod
+    def _normalize_assembly_line(cls, line: str) -> str:
+        """Strip addresses and raw bytes, normalizing registers and immediates."""
+        parts = line.strip().split()
+        if not parts:
+            return ""
+        start = 1 if parts[0].startswith("0x") else 0
+        while start < len(parts) and all(c in "0123456789abcdefABCDEF" for c in parts[start]):
+            start += 1
+        if start >= len(parts):
+            return ""
+        mnem = parts[start].lower()
+        ops = " ".join(parts[start + 1:]).lower()
+
+        ops = re.sub(r"\b(r|e)?[abcd]x\b|\b[abcd][lh]\b|\b[wx][0-3]\b", "REG_ACC", ops)
+        ops = re.sub(r"\b(r|e)?(sp|bp)\b|\b(fp|lr)\b", "REG_FRAME", ops)
+        ops = re.sub(r"\b(r|e)?(si|di)\b|\br[89]\b|\br1[0-5]\b|\b[wx][4-9]\b|\b[wx]1[0-9]\b", "REG_GEN", ops)
+        ops = re.sub(r"\b0x[0-9a-fA-F]+\b|\b\d+\b", "IMM", ops)
+        ops = re.sub(r"\[.*?\]", "[MEM]", ops)
+        return f"{mnem} {ops}".strip()
+
+    @classmethod
+    def _calc_structural_similarity(
+        cls,
+        fa: DecompiledFunction,
+        fb: DecompiledFunction,
+    ) -> tuple[float, str]:
+        """Compute composite similarity across normalized mnemonics, CFG blocks, and complexity."""
+        norm_a = [cls._normalize_assembly_line(line) for line in fa.assembly_lines if line.strip()]
+        norm_b = [cls._normalize_assembly_line(line) for line in fb.assembly_lines if line.strip()]
+
+        # Mnemonic sequence similarity
+        matcher = difflib.SequenceMatcher(None, norm_a, norm_b)
+        mnem_sim = matcher.ratio()
+
+        # CFG blocks delta
+        na = max(1, len(fa.cfg_blocks))
+        nb = max(1, len(fb.cfg_blocks))
+        cfg_sim = 1.0 - (abs(na - nb) / max(na, nb))
+
+        # Complexity delta
+        ca = max(1, getattr(fa, "cyclomatic_complexity", 1))
+        cb = max(1, getattr(fb, "cyclomatic_complexity", 1))
+        comp_sim = 1.0 - (abs(ca - cb) / max(ca, cb))
+
+        # Callee Jaccard similarity
+        callees_a = set(fa.callees)
+        callees_b = set(fb.callees)
+        if callees_a or callees_b:
+            callee_sim = len(callees_a & callees_b) / max(1, len(callees_a | callees_b))
+        else:
+            callee_sim = 1.0
+
+        composite = (0.45 * mnem_sim) + (0.25 * cfg_sim) + (0.15 * comp_sim) + (0.15 * callee_sim)
+        reason = f"Normalized mnemonics: {mnem_sim:.0%}, CFG delta: {cfg_sim:.0%}, Complexity: {comp_sim:.0%}"
+        return round(composite, 4), reason
+
+    @classmethod
     def _diff_functions(
         cls,
         funcs_a: list[DecompiledFunction],
         funcs_b: list[DecompiledFunction],
     ) -> tuple[list[FunctionDiffItem], float, dict[str, int]]:
-        """Compare functions using deterministic matching followed by heuristic similarity."""
+        """Compare functions using deterministic symbol matching followed by CFG/mnemonic structural matching."""
         map_a = {f.name: f for f in funcs_a}
         map_b = {f.name: f for f in funcs_b}
 
-        addr_b = {f.address: f for f in funcs_b if f.address}
+        addr_b = {f.address: f for f in funcs_b if f.address and f.address != "0x0"}
 
         diff_items: list[FunctionDiffItem] = []
         matched_b: set[str] = set()
 
-        # Phase 1 & 2: Match by exact symbol name
+        # Phase 1: Match by exact symbol name
         for name, fa in map_a.items():
             fb = map_b.get(name)
             if fb is not None:
                 matched_b.add(fb.name)
-                match_type = "exact_match" if fa.address == fb.address else "symbol_match"
-                conf = 1.0 if match_type == "exact_match" else 0.95
+                is_exact = fa.address == fb.address and fa.address != "0x0"
+                match_type = "exact_match" if is_exact else "symbol_match"
+                conf = 1.0 if is_exact else 0.95
+                reason = "Exact symbol and entrypoint match" if is_exact else "Identical symbol name with relocated entrypoint"
 
                 sim, udiff = cls._calc_code_similarity(fa, fb)
                 status = "identical" if sim >= 0.999 else "modified"
@@ -188,6 +250,8 @@ class BinaryDiffEngine:
                         match_type=match_type,
                         confidence=conf,
                         similarity=round(sim, 4),
+                        match_reason=reason,
+                        is_uncertain=False,
                         assembly_a=fa.assembly_lines,
                         assembly_b=fb.assembly_lines,
                         pseudocode_a=fa.pseudocode,
@@ -196,8 +260,10 @@ class BinaryDiffEngine:
                     )
                 )
 
-        # Phase 3 & 4: Match remaining by address or instruction hash
+        # Phase 2: Match remaining by exact entrypoint address
         unmatched_a = [f for f in funcs_a if f.name not in [d.name for d in diff_items]]
+        still_unmatched_a: list[DecompiledFunction] = []
+
         for fa in unmatched_a:
             fb = addr_b.get(fa.address)
             if fb is not None and fb.name not in matched_b:
@@ -209,9 +275,11 @@ class BinaryDiffEngine:
                         address_a=fa.address,
                         address_b=fb.address,
                         status="identical" if sim >= 0.999 else "modified",
-                        match_type="heuristic_match",
-                        confidence=0.85,
+                        match_type="address_match",
+                        confidence=0.90,
                         similarity=round(sim, 4),
+                        match_reason="Identical entrypoint address with modified/renamed symbol",
+                        is_uncertain=False,
                         assembly_a=fa.assembly_lines,
                         assembly_b=fb.assembly_lines,
                         pseudocode_a=fa.pseudocode,
@@ -220,24 +288,73 @@ class BinaryDiffEngine:
                     )
                 )
             else:
-                # Removed in B
+                still_unmatched_a.append(fa)
+
+        # Phase 3: Structural CFG & Normalized Mnemonic Matching (for renamed symbols / shifted addresses)
+        remaining_b = [fb for fb in funcs_b if fb.name not in matched_b]
+        final_unmatched_a: list[DecompiledFunction] = []
+
+        for fa in still_unmatched_a:
+            best_match: DecompiledFunction | None = None
+            best_score = 0.0
+            best_reason = ""
+
+            for fb in remaining_b:
+                if fb.name in matched_b:
+                    continue
+                score, reason = cls._calc_structural_similarity(fa, fb)
+                if score > best_score:
+                    best_score = score
+                    best_match = fb
+                    best_reason = reason
+
+            if best_match is not None and best_score >= 0.70:
+                matched_b.add(best_match.name)
+                sim, udiff = cls._calc_code_similarity(fa, best_match)
+                is_high_conf = best_score >= 0.85
+
                 diff_items.append(
                     FunctionDiffItem(
-                        name=fa.name,
+                        name=f"{fa.name} ~ {best_match.name}",
                         address_a=fa.address,
-                        address_b=None,
-                        status="removed",
-                        match_type="unmatched",
-                        confidence=1.0,
-                        similarity=0.0,
+                        address_b=best_match.address,
+                        status="identical" if sim >= 0.999 else "modified",
+                        match_type="structural_match" if is_high_conf else "uncertain_match",
+                        confidence=best_score,
+                        similarity=round(sim, 4),
+                        match_reason=f"{'Confident' if is_high_conf else 'Uncertain'} structural match ({best_score:.0%}): {best_reason}",
+                        is_uncertain=not is_high_conf,
                         assembly_a=fa.assembly_lines,
+                        assembly_b=best_match.assembly_lines,
                         pseudocode_a=fa.pseudocode,
+                        pseudocode_b=best_match.pseudocode,
+                        diff_unified=udiff,
                     )
                 )
+            else:
+                final_unmatched_a.append(fa)
 
-        # Added in B
+        # Phase 4: Remaining unmatched in A are 'removed'
+        for fa in final_unmatched_a:
+            diff_items.append(
+                FunctionDiffItem(
+                    name=fa.name,
+                    address_a=fa.address,
+                    address_b=None,
+                    status="removed",
+                    match_type="unmatched",
+                    confidence=1.0,
+                    similarity=0.0,
+                    match_reason="Function removed or completely refactored in target B",
+                    is_uncertain=False,
+                    assembly_a=fa.assembly_lines,
+                    pseudocode_a=fa.pseudocode,
+                )
+            )
+
+        # Phase 5: Remaining unmatched in B are 'added'
         for fb in funcs_b:
-            if fb.name not in matched_b and fb.name not in [d.name for d in diff_items]:
+            if fb.name not in matched_b and fb.name not in [d.name.split(" ~ ")[-1] for d in diff_items]:
                 diff_items.append(
                     FunctionDiffItem(
                         name=fb.name,
@@ -247,6 +364,8 @@ class BinaryDiffEngine:
                         match_type="unmatched",
                         confidence=1.0,
                         similarity=0.0,
+                        match_reason="New function introduced in target B",
+                        is_uncertain=False,
                         assembly_b=fb.assembly_lines,
                         pseudocode_b=fb.pseudocode,
                     )
@@ -315,13 +434,16 @@ class BinaryDiffEngine:
         lines.extend([
             "",
             "## 3. Function-Level Changes",
-            "| Function | Target A Addr | Target B Addr | Match Type | Status | Similarity |",
-            "| :--- | :--- | :--- | :--- | :--- | :--- |",
+            "| Function | Target A Addr | Target B Addr | Match Type | Status | Similarity | Match Reason |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
         ])
 
         for fn in diff.functions[:100]:
+            uncertain_flag = " `[UNCERTAIN]`" if fn.is_uncertain else ""
             lines.append(
-                f"| `{fn.name}` | `{fn.address_a or '—'}` | `{fn.address_b or '—'}` | {fn.match_type} | **{fn.status.upper()}** | {fn.similarity * 100:.1f}% |"
+                f"| `{fn.name}` | `{fn.address_a or '—'}` | `{fn.address_b or '—'}` | "
+                f"{fn.match_type}{uncertain_flag} | **{fn.status.upper()}** | "
+                f"{fn.similarity * 100:.1f}% | {fn.match_reason or '—'} |"
             )
 
         lines.extend([

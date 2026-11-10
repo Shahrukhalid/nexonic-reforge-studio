@@ -224,13 +224,28 @@ def tag_release(version: str, push: bool = True, force_skip_ci: bool = False) ->
         print(f"Error: Version mismatch! pyproject.toml has {cur}, requested tag is {clean_ver}", file=sys.stderr)
         return False
 
+    tag_name = f"v{clean_ver}"
+
+    # Protect release provenance: reject rewriting existing release tags
+    code, local_tags = run_cmd(["git", "tag", "-l", tag_name])
+    if local_tags.strip() == tag_name:
+        print(f"Error: Tag {tag_name} already exists locally. Release tags are immutable and cannot be rewritten.", file=sys.stderr)
+        return False
+
+    try:
+        remote_ref = github_request(f"git/ref/tags/{tag_name}")
+        if isinstance(remote_ref, dict) and "ref" in remote_ref:
+            print(f"Error: Tag {tag_name} already exists on GitHub origin. Provenance protection prevents tag rewriting.", file=sys.stderr)
+            return False
+    except Exception:
+        pass
+
     if not force_skip_ci:
         ci_ok, _ = check_ci_status()
         if not ci_ok:
             print("Error: Required CI checks have not all passed for the current commit. Tagging aborted.", file=sys.stderr)
             return False
 
-    tag_name = f"v{clean_ver}"
     print(f"Creating git tag {tag_name}...")
     code, out = run_cmd(["git", "tag", "-a", tag_name, "-m", f"Nexonic ReForge Studio {tag_name}"])
     if code != 0:

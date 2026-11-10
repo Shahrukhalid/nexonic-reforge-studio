@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.8.0] - 2026-11-10
+### Added
+- **Ground Truth Benchmarking & Accuracy Evaluation Engine**:
+  - Legally authorized reference fixtures with documented functions, interfaces, constants, and control flow in C, Java, and C#.
+  - `GroundTruthEvaluator`: quantitative measurement of precision, recall, F1 score, true positives, false positives, and missing features.
+  - Formal Ground Truth Evaluation Report generation in Markdown and JSON.
+- **Genuine Decompiler Integration & Enhanced Control-Flow Analysis**:
+  - Differentiates authentic decompiler output (Ghidra, JADX, ILSpy) with `[GENUINE DECOMPILER OUTPUT — EXTRACTED FROM ENGINE]` banners from clean-room heuristic synthesis.
+  - Cyclomatic complexity metric calculation ($M = E - N + 2$) across extracted CFG basic blocks and branch edges.
+  - Source-to-assembly evidence mapping (`source_asm_map`) linking generated pseudocode lines directly back to binary instructions.
+- **Implementation Task Planner & Human Review Checklist**:
+  - `TaskPlanner`: synthesizes discrete implementation tasks with categories, dependencies, and acceptance criteria mapped strictly to confirmed findings.
+  - Mandatory Human Review Checklist in `ReconstructionStudioPage` (Tab 4 "Tasks & Review") for unknown boundaries and unverified endpoints.
+  - Explicit warning enforcement: scaffolding generation is strictly not equivalent to complete application reconstruction.
+- **Realistic Behavioral Test Generation**:
+  - Eliminated invented default endpoints; tests strictly reflect observed contracts.
+  - Cross-platform test suite validation for Python, TypeScript, Rust, Go, and C#.
+- **Structural Binary Diffing Engine**:
+  - Normalized instruction abstraction (registers, immediates, memory offsets) and CFG topology comparison.
+  - Robust matching of renamed symbols and relocated entrypoints with explicit confidence scoring and match reasoning.
+  - Accurately flags and reports uncertain structural matches below high-confidence threshold.
+- **Release Automation & Provenance Protection**:
+  - Enforced tag immutability checks in `scripts/autopilot.py` to prevent accidental tag rewriting and preserve cryptographic release provenance.
+
 ## [0.7.0] - 2026-11-10
 ### Added
 - **Advanced Decompilation Synthesizer**:

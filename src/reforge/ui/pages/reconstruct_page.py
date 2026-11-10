@@ -1,6 +1,8 @@
 """Reconstruction Studio: clean-room project reconstruction wizard."""
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -22,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...reconstruct import scaffold_project
+from ...reconstruct.tasks import TaskPlanner
 from .common import Page
 
 
@@ -33,6 +36,8 @@ class ReconstructionStudioPage(Page):
         super().__init__(ctx)
         self.current_pid: int | None = None
         self.features: list[dict] = []
+        self.tasks: list[dict] = []
+        self.reviews: list[dict] = []
 
         # Top Project Selector Bar
         top = QHBoxLayout()
@@ -153,15 +158,67 @@ class ReconstructionStudioPage(Page):
         self.btn_scaffold.setObjectName("Primary")
         self.btn_scaffold.clicked.connect(self._scaffold_project)
 
+        btn_next3 = QPushButton("Implementation Tasks ->")
+        btn_next3.clicked.connect(lambda: self.wizard_tabs.setCurrentIndex(3))
+
+        btn_h3.addWidget(self.btn_scaffold)
+        btn_h3.addWidget(btn_next3)
+        s3_lay.addLayout(btn_h3)
+
+        self.wizard_tabs.addTab(step3, "3. Scaffolding & Generation")
+
+        # Step 4: Implementation Tasks & Human Review Checklist
+        step4 = QFrame()
+        s4_lay = QVBoxLayout(step4)
+        s4_lay.setContentsMargins(12, 12, 12, 12)
+        s4_lay.setSpacing(10)
+
+        s4_lay.addWidget(QLabel("<b>Step 4: Implementation Tasks & Human Review Checklist</b><br>"
+                                "<span style='color: #888;'>Discrete implementation tasks mapped strictly to confirmed findings, "
+                                "with explicit human review items for unknown or tentative boundaries.</span>"))
+
+        # Tasks Table
+        s4_lay.addWidget(QLabel("<b>Discrete Implementation Tasks</b>"))
+        self.table_tasks = QTableWidget(0, 5)
+        self.table_tasks.setHorizontalHeaderLabels(["Task ID", "Category", "Task Title", "Human Review", "Status"])
+        self.table_tasks.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        s4_lay.addWidget(self.table_tasks, 2)
+
+        # Human Review Checklist Table
+        s4_lay.addWidget(QLabel("<b>Operator Human Review Checklist (Unknowns & Unverified Contracts)</b>"))
+        self.table_reviews = QTableWidget(0, 4)
+        self.table_reviews.setHorizontalHeaderLabels(["ID", "Review Item", "Status Category", "Recommended Operator Action"])
+        self.table_reviews.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.table_reviews.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        s4_lay.addWidget(self.table_reviews, 2)
+
+        # Scaffolding != Reconstruction Banner
+        lbl_rule = QLabel(
+            "⚠️ Clean-Room Rule: Scaffolding generation does NOT equal complete application reconstruction. "
+            "Manual engineering review, verified business logic, and independent domain implementation are strictly required."
+        )
+        lbl_rule.setWordWrap(True)
+        lbl_rule.setStyleSheet("color: #d19a66; font-weight: bold; padding: 4px;")
+        s4_lay.addWidget(lbl_rule)
+
+        btn_h4 = QHBoxLayout()
+        btn_plan_tasks = QPushButton("Refresh Tasks & Checklist")
+        btn_plan_tasks.clicked.connect(self._generate_tasks)
+
+        self.btn_run_tests = QPushButton("Run Clean-Room Behavioral Tests")
+        self.btn_run_tests.clicked.connect(self._run_tests)
+
         self.btn_open_ws = QPushButton("Open in Source Workspace ->")
         self.btn_open_ws.setEnabled(False)
         self.btn_open_ws.clicked.connect(self._open_in_workspace)
 
-        btn_h3.addWidget(self.btn_scaffold)
-        btn_h3.addWidget(self.btn_open_ws)
-        s3_lay.addLayout(btn_h3)
+        btn_h4.addWidget(btn_plan_tasks)
+        btn_h4.addWidget(self.btn_run_tests)
+        btn_h4.addStretch(1)
+        btn_h4.addWidget(self.btn_open_ws)
+        s4_lay.addLayout(btn_h4)
 
-        self.wizard_tabs.addTab(step3, "3. Scaffolding & Generation")
+        self.wizard_tabs.addTab(step4, "4. Tasks & Review")
 
         self.root.addWidget(self.wizard_tabs, 1)
 
@@ -186,6 +243,8 @@ class ReconstructionStudioPage(Page):
         else:
             self.current_pid = None
             self.table_features.setRowCount(0)
+            self.table_tasks.setRowCount(0)
+            self.table_reviews.setRowCount(0)
             self.txt_spec.setPlainText("")
 
     def _on_project_changed(self, _idx: int):
@@ -246,6 +305,7 @@ class ReconstructionStudioPage(Page):
             self.table_features.setItem(row, 2, QTableWidgetItem(feat["category"]))
 
         self._generate_spec()
+        self._generate_tasks()
 
     def _select_all_features(self):
         for i in range(self.table_features.rowCount()):
@@ -253,6 +313,7 @@ class ReconstructionStudioPage(Page):
             if item:
                 item.setCheckState(Qt.Checked)
         self._generate_spec()
+        self._generate_tasks()
 
     def _deselect_all_features(self):
         for i in range(self.table_features.rowCount()):
@@ -260,6 +321,7 @@ class ReconstructionStudioPage(Page):
             if item:
                 item.setCheckState(Qt.Unchecked)
         self._generate_spec()
+        self._generate_tasks()
 
     def _generate_spec(self):
         pid = self.current_pid
@@ -293,6 +355,35 @@ class ReconstructionStudioPage(Page):
 
         self.txt_spec.setPlainText("\n".join(lines))
 
+    def _generate_tasks(self):
+        pid = self.current_pid
+        p = self.ctx.db.project(pid) if pid else None
+        p_name = p["name"] if p else "TargetApp"
+        spec = self.txt_spec.toPlainText()
+        findings = self.ctx.db.findings(pid) if pid else []
+
+        tasks, reviews = TaskPlanner.generate_plan(spec, findings, p_name)
+        self.tasks = [t.to_dict() for t in tasks]
+        self.reviews = [r.to_dict() for r in reviews]
+
+        # Populate tasks table
+        self.table_tasks.setRowCount(len(tasks))
+        for row, t in enumerate(tasks):
+            self.table_tasks.setItem(row, 0, QTableWidgetItem(t.id))
+            self.table_tasks.setItem(row, 1, QTableWidgetItem(t.category))
+            self.table_tasks.setItem(row, 2, QTableWidgetItem(t.title))
+            rev_label = "MANDATORY" if t.requires_human_review else "NO"
+            self.table_tasks.setItem(row, 3, QTableWidgetItem(rev_label))
+            self.table_tasks.setItem(row, 4, QTableWidgetItem(t.status.upper()))
+
+        # Populate reviews table
+        self.table_reviews.setRowCount(len(reviews))
+        for row, r in enumerate(reviews):
+            self.table_reviews.setItem(row, 0, QTableWidgetItem(r.id))
+            self.table_reviews.setItem(row, 1, QTableWidgetItem(r.item))
+            self.table_reviews.setItem(row, 2, QTableWidgetItem(r.evidence_status))
+            self.table_reviews.setItem(row, 3, QTableWidgetItem(r.recommended_action))
+
     def _scaffold_project(self):
         pid = self.current_pid
         p = self.ctx.db.project(pid) if pid else None
@@ -321,6 +412,31 @@ class ReconstructionStudioPage(Page):
         QMessageBox.information(self, "Project Scaffolded",
                                 f"Clean-room project '{proj_name}' created successfully with {len(created_files)} files at:\n{dest_dir}")
         self.btn_open_ws.setEnabled(True)
+        self._generate_tasks()
+
+    def _run_tests(self):
+        pid = self.current_pid
+        p = self.ctx.db.project(pid) if pid else None
+        if not p or not p.get("workdir"):
+            QMessageBox.warning(self, "Run Tests", "Please select a project with a valid workspace.")
+            return
+
+        proj_name = self.txt_proj_name.text().strip() or "reconstructed_app"
+        dest_dir = Path(p["workdir"]) / "reconstructed" / proj_name
+        test_file = dest_dir / "tests" / "test_behavioral.py"
+
+        if not test_file.exists():
+            QMessageBox.information(self, "Run Tests", f"No generated Python tests found at:\n{test_file}\nScaffold the project first.")
+            return
+
+        # Run tests safely using unittest in an isolated subprocess
+        res = subprocess.run([sys.executable, "-m", "unittest", str(test_file)], capture_output=True, text=True)
+        outcome = "PASSED" if res.returncode == 0 else "FAILURES DETECTED"
+        msg = f"Test Execution Outcome: {outcome}\n\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+        if res.returncode == 0:
+            QMessageBox.information(self, "Behavioral Tests", msg)
+        else:
+            QMessageBox.warning(self, "Behavioral Tests", msg)
 
     def _open_in_workspace(self):
         self.ctx.window.show_page("Source Code Workspace", select=self.current_pid)

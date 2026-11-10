@@ -1,6 +1,13 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.7.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.8.0 · Publisher: Nexonic Technologies_
+
+## Release Provenance & Investigation
+- **v0.7.0 Release Tag Verification**:
+  - Investigation into previous workflow runs confirmed run `42781283931` was blocked at `verify-gate` on commit `5997679` due to incomplete Linux matrix teardown.
+  - The permanent release was retagged to verified commit `cad6093` (where all 7 required CI checks passed with `conclusion=success`).
+  - Run `42786263594` built all 3 installer artifacts and published release `v0.7.0` with verified 328-byte `SHA256SUMS.txt`.
+  - Release tag immutability has been enforced in `scripts/autopilot.py` to prevent accidental tag rewriting permanently.
 
 ## Published Releases
 - **v0.7.0 (Published 2026-11-10T08:58:37Z)**
@@ -48,26 +55,31 @@ _Last updated: 2026-11-10 · v0.7.0 · Publisher: Nexonic Technologies_
       SHA-256: `e9164eac7f817311a3ebf5f86e9908a9fdc2a6bfb10dcb4f7868886078814508`
     - `SHA256SUMS.txt` (112 bytes)
 
-## Current Milestone: v0.7.0
-**v0.7.0 — Advanced Clean-Room Decompilation Synthesis, Diffing & Interactive Binary Navigation.**
-- Advanced Decompilation Synthesizer: Heuristic pseudocode generation bridging disassemblers and high-level representations.
-- Interactive Binary Diffing: Side-by-side binary and disassembly comparison engine with visual structural diffing.
-- End-to-End Clean-Room Pipeline: Automated test generation from discovered binary behavioral profiles.
+## Current Milestone: v0.8.0
+**v0.8.0 — Real-World Ground-Truth Validation, Genuine Decompiler Integration & Evidence Task Planning.**
+- Ground Truth Benchmarking: Legally authorized reference targets (C, Java, C#) with documented behavior to evaluate real decompiler precision, recall, and false positives.
+- Genuine Decompiler Integration: Distinguishes authentic engine output from heuristic clean-room synthesis with explicit confidence scores and cyclomatic complexity.
+- Source-to-Assembly Evidence Navigation: Line-by-line mapping connecting pseudocode statements directly back to disassembly instructions.
+- Implementation Task Planner & Human Review Checklist: Discrete actionable tasks derived strictly from confirmed findings, with explicit operator review for unknown boundaries.
+- Realistic Behavioral Test Generation: Zero fabricated endpoints; strict segregation of verified contracts, hypothesized behaviors, and mock boundaries.
+- Structural Binary Diffing: Normalized instruction abstraction and CFG topology matching for renamed symbols and relocated functions.
+- Release Provenance & Immutability: Protection against tag rewriting and fail-closed CI gating.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite storage, thread-pool background task runner, PyInstaller packaging.
-- GUI: 12-section navigation; all 12 pages fully implemented: Dashboard, Import, Analysis Workspace, Application Explorer, Visual UI Explorer, AI Assistant, Reconstruction Studio, Source Workspace, Build & Export, Tool Manager, Activity & Logs, Settings. 0 placeholder pages.
+- GUI: 12-section navigation; all 12 pages fully implemented: Dashboard, Import, Analysis Workspace, Application Explorer, Visual UI Explorer, AI Assistant, Reconstruction Studio (4-step wizard with Tasks & Review), Source Workspace, Build & Export, Tool Manager, Activity & Logs, Settings. 0 placeholder pages.
 - Safety & Sandboxing: Bounded real-time subprocess streaming reader, strict separation between `extracted/` and clean-room `reconstructed/`, zero host execution of analyzed binaries, DPAPI/Keychain credential encryption, zip slip/bomb protection.
 - Reverse-Engineering Adapters: Ghidra 12.2, Detect It Easy, radare2, Rizin, WABT, capa, FLOSS, GoReSym, JADX, ILSpy, pycdc, apktool, binwalk, angr, assetripper, ImHex launcher, Frida device discovery.
 - AI & Clean-Room: BYOK provider integration, streaming responses, evidence context synthesis, independent scaffolding, test runner.
 - Packaging & Export: Source archives with SHA-256 integrity, CycloneDX SBOM manifests, Markdown/JSON reports, PyInstaller spec (Windows x64 / macOS arm64+x64), Inno Setup installer script, macOS DMG packager.
 - CI/CD: Multi-platform GitHub Actions workflows (ubuntu-24.04, macos-15 arm64, macos-15-intel x86_64, windows-2022) with linting, security audits (pip-audit, gitleaks full history), unit tests, integration tests, and release installer generation.
-- Release Integrity: SHA-256 checksum aggregation verified across all target platforms with automated release gate and branch protection enforcement.
+- Release Integrity: SHA-256 checksum aggregation verified across all target platforms with automated release gate, tag immutability, and branch protection enforcement.
 
 ## Test Results
-- Total automated tests: 118 tests across unit, GUI, adapters, cache, synthesizer, binary diffing, test generator, and export capabilities (106 passed, 12 integration skips locally; 112 passed, 6 skips on CI).
+- Total automated tests: 125 tests across unit, GUI, adapters, cache, synthesizer, ground truth, tasks, binary diffing, test generator, and export capabilities (113 passed, 12 integration skips locally).
 - `ruff check`: All checks clean.
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
 - v0.7.0 published and verified live on GitHub Releases with complete multi-platform checksum manifest and all 7 CI checks passing on release commit `cad6093`.
+- v0.8.0 development completed, tested, and staged for pull request validation.
