@@ -7,6 +7,11 @@ updates:
     labels:
       - "dependencies"
       - "auto-merge"
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -14,3 +19,7 @@ updates:
     labels:
       - "dependencies"
       - "auto-merge"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

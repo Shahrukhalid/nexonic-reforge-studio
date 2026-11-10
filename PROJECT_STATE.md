@@ -1,15 +1,15 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.4.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.5.0 · Publisher: Nexonic Technologies_
 
 ## Current milestone
-**M1 through M10 — ALL COMPLETED (v0.4.0).**
-- M1-M4: Native identification, LIEF structural analysis, safe archive extraction, strings/network indicators, Ghidra 12.2 headless decompilation, Capstone disassembly, Android AXML/DEX, .NET dnfile, MSI native reader, and PyInstaller extractor.
-- M5 (Reverse-Engineering Tool Ecosystem): 85/85 verified registry tools, host binary version detection, JADX & WABT verified tool packs, PR #1 (Rizin, ImHex, Frida bridge), PR #2 (community templates), and adapters for apktool, binwalk, angr, and assetripper.
-- M6 (Application Explorer & Visual UI Explorer): Hierarchical structure navigation, dependency graph, API endpoints, strings, call graphs, monospace code viewer with syntax highlighting and provenance badges, and UI resource catalog with image preview and screenshot import.
-- M7 (AI Assistant): Bring Your Own Key (BYOK) assistant for OpenRouter, OpenAI, Anthropic, Gemini, and Local models, Windows DPAPI / macOS Keychain credential security, and evidence-backed clean-room context compilation with explicit opt-in consent.
-- M8 (Reconstruction Studio & Source Workspace): 3-step clean-room reconstruction wizard (feature selection -> spec generation -> scaffolding for Python/TypeScript/Rust/Go/C#), multi-tab editor with syntax highlighting, diff viewer, and integrated test runner.
-- M9-M10 (Build, Export & Packaging): Clean-room source archive exporter (.zip, .tar.gz with .sha256 manifests), CycloneDX-compatible SBOM JSON exporter, report bundle packager, all 12 GUI navigation pages fully implemented (0 placeholders), and verified Windows & macOS installer packaging pipelines.
+**v0.5.0 Released & Validated — Analysis Caching, UI Exporter, Compiler Bundling, and Self-Healing GitHub Automation.**
+- Persistent Analysis Cache Engine (`reforge.analysis.cache.AnalysisCache`): SHA-256 keyed disk cache for tool analysis and decompilation findings.
+- Application Explorer Enhancements: Direct clipboard copy and file export for decompiled and disassembled functions.
+- Visual UI Explorer Enhancements: Individual asset export action for discovered bitmaps, icons, layouts, and embedded UI resources.
+- AI Assistant: Live prompt token estimation (`lbl_token_est`) for BYOK provider context budgeting.
+- Reconstruction Studio & Compiler: Automated standalone `.zip` distribution archive bundling with `.sha256` checksum manifests for clean-room builds.
+- Self-Healing CI & Automation: Full audit and repair of GitHub Actions workflows, removal of redundant workflow runs, Dependabot grouping, repository labels creation, native GitHub auto-merge enablement, and Capstone upgraded to 5.0.9.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite storage, thread-pool background task runner, PyInstaller packaging.
@@ -18,13 +18,13 @@ _Last updated: 2026-11-10 · v0.4.0 · Publisher: Nexonic Technologies_
 - Reverse-Engineering Adapters: Ghidra 12.2, Detect It Easy, radare2, Rizin, WABT, capa, FLOSS, GoReSym, JADX, ILSpy, pycdc, apktool, binwalk, angr, assetripper, ImHex launcher, Frida device discovery.
 - AI & Clean-Room: BYOK provider integration, streaming responses, evidence context synthesis, independent scaffolding, test runner.
 - Packaging & Export: Source archives with SHA-256 integrity, CycloneDX SBOM manifests, Markdown/JSON reports, PyInstaller spec (Windows x64 / macOS arm64+x64), Inno Setup installer script, macOS DMG packager.
-- CI/CD: Multi-platform GitHub Actions workflows (ubuntu-24.04, macos-15 arm64, windows-2022) with linting, security audits (pip-audit, gitleaks full history), unit tests, integration tests, and release installer generation.
+- CI/CD: Multi-platform GitHub Actions workflows (ubuntu-24.04, macos-15 arm64, macos-13 x86_64, windows-2022) with linting, security audits (pip-audit, gitleaks full history), unit tests, integration tests, and release installer generation.
 
 ## Test Results
-- Total automated tests: 95+ test suite across unit, GUI, adapters, and export capabilities.
+- Total automated tests: 105 tests across unit, GUI, adapters, cache, and export capabilities (93 passed, 12 integration skips when engines not installed on host).
 - `ruff check`: All checks clean.
-- `pytest`: All passing.
+- `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.4.0 ready for tagged release and packaging pipeline execution.
+- v0.5.0 ready for tagged release and packaging pipeline execution.
 - Windows Inno Setup & macOS DMG packaging validated.

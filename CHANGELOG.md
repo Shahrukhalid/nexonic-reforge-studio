@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.5.0] - 2026-11-10
+### Added
+- **Persistent Analysis Cache Engine (`reforge.analysis.cache.AnalysisCache`)**:
+  - SHA-256 keyed caching of tool analysis and decompiler findings on disk.
+  - Transparently integrated into `AnalysisOrchestrator`, preventing redundant disassembly and decompiler passes.
+- **Application Explorer Enhancements**:
+  - Interactive "Copy Code" action copying disassembled and decompiled snippets to system clipboard.
+  - "Save Code to File…" action saving code snippets directly to user-specified paths.
+- **Visual UI Explorer Enhancements**:
+  - Added "Export Asset…" button and file exporter for saving selected image assets, layouts, and embedded UI resources.
+- **AI Assistant Enhancements**:
+  - Live prompt token estimator (`lbl_token_est`) providing pre-dispatch token budget visibility.
+- **Reconstruction Studio & Native Compiler Bundling**:
+  - Standalone distribution archive packaging (`<app>_dist.zip`) with automated `.sha256` integrity manifest generation upon clean-room build completion.
+### Fixed & Optimized
+- **GitHub Workflows Self-Repair & Consolidation**:
+  - Corrected macOS Intel runner label to `macos-13` across CI and release workflows.
+  - Upgraded all GitHub Actions to verified major releases (`actions/checkout@v7`, `setup-python@v7`, `upload-artifact@v7`, `download-artifact@v8`, `setup-java@v6`, `action-gh-release@v3`, `gitleaks/gitleaks-action@v3`).
+  - Added Dependabot grouping (`groups`) in `.github/dependabot.yml` to eliminate individual PR spam and race conditions.
+  - Created missing repository labels (`dependencies`, `auto-merge`) on GitHub.
+  - Enabled native GitHub repository auto-merge (`allow_auto_merge=True`) and automatic branch deletion (`delete_branch_on_merge=True`).
+  - Verified and upgraded Capstone from 5.0.8 to `capstone==5.0.9`.
+  - Replaced placeholder `README.md` with complete, professional public documentation.
+
 ## [0.4.0] - 2026-11-10
 ### Added
 - **M5 Reverse-Engineering Tool Ecosystem**:

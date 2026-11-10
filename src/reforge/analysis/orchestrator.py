@@ -18,6 +18,7 @@ from ..core.safety import Limits, UnsafeInput
 from ..core.tasks import TaskContext
 from ..tools import adapters
 from . import android, binary, disasm, dotnet, extract, fingerprint, identify, msi, pyinstaller, strings
+from .cache import AnalysisCache
 
 log = logging.getLogger("reforge.orchestrator")
 
@@ -29,9 +30,10 @@ CONTAINER_TOOL_FORMATS = {"apk", "jar", "war"}
 
 
 class Orchestrator:
-    def __init__(self, db: Database, limits: Limits | None = None):
+    def __init__(self, db: Database, limits: Limits | None = None, cache: AnalysisCache | None = None):
         self.db = db
         self.limits = limits or Limits()
+        self.cache = cache or AnalysisCache()
 
     def analyze(self, pid: int, ctx: TaskContext | None = None) -> dict:
         ctx = ctx or TaskContext("inline")
@@ -65,8 +67,10 @@ class Orchestrator:
         ctx.progress(2, "Identifying file")
         ident, f = identify.identify_findings(src)
         self._rec(pid, f)
+        file_sha256 = ""
         if src.is_file():
             h = next(x.value for x in f if x.key == "hashes")
+            file_sha256 = h.get("sha256", "")
             self.db.update_project(pid, sha256=h["sha256"], size=h["size"])
         log.info("project %s: %s (%s)", pid, ident.fmt, ident.description)
 
@@ -203,10 +207,19 @@ class Orchestrator:
                 used[a.tool] = used.get(a.tool, 0) + 1
                 ctx.progress(base, f"{a.tool}: {rel}")
                 t = time.time()
-                status, fs, res = adapters.run_adapter(a, p, rel, self.limits.tool_timeout_s)
+                file_hash = file_sha256
+                cached = self.cache.get(file_hash, a.tool, "tools")
+                if cached:
+                    fs = [Finding(**f) for f in cached]
+                    status = "ok"
+                    res = None
+                else:
+                    status, fs, res = adapters.run_adapter(a, p, rel, self.limits.tool_timeout_s)
+                    if status == "ok" and file_hash:
+                        self.cache.put(file_hash, a.tool, "tools", fs)
                 tools_run[status] += 1
                 self._rec(pid, fs)
-                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else "(not installed)", t, status,
+                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached else "(not installed)"), t, status,
                                      res.stderr[-500:] if res and not res.ok else "")
 
         # container-level engines (decompile the whole package, e.g. JADX on an APK)
@@ -215,10 +228,19 @@ class Orchestrator:
                 ctx.check()
                 ctx.progress(90, f"{a.tool}: {src.name}")
                 t = time.time()
-                status, fs, res = adapters.run_adapter(a, src, src.name, self.limits.tool_timeout_s)
+                file_hash = file_sha256
+                cached = self.cache.get(file_hash, a.tool, "container")
+                if cached:
+                    fs = [Finding(**f) for f in cached]
+                    status = "ok"
+                    res = None
+                else:
+                    status, fs, res = adapters.run_adapter(a, src, src.name, self.limits.tool_timeout_s)
+                    if status == "ok" and file_hash:
+                        self.cache.put(file_hash, a.tool, "container", fs)
                 tools_run[status] += 1
                 self._rec(pid, fs)
-                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else "(not installed)", t, status,
+                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached else "(not installed)"), t, status,
                                      res.stderr[-500:] if res and not res.ok else "")
 
         ctx.progress(95, "Summarising")

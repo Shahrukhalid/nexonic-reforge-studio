@@ -160,10 +160,20 @@ class AIAssistantPage(Page):
 
         # Prompt input + buttons
         bottom_h = QHBoxLayout()
+
+        input_box = QVBoxLayout()
         self.prompt_edit = QPlainTextEdit()
         self.prompt_edit.setFixedHeight(75)
         self.prompt_edit.setPlaceholderText("Ask the AI Assistant about findings, architecture, or clean-room implementation…")
-        bottom_h.addWidget(self.prompt_edit, 1)
+        self.prompt_edit.textChanged.connect(self._update_token_estimate)
+        input_box.addWidget(self.prompt_edit)
+
+        self.lbl_token_est = QLabel("Est. tokens: 0")
+        self.lbl_token_est.setObjectName("Muted")
+        self.lbl_token_est.setStyleSheet("font-size: 11px;")
+        input_box.addWidget(self.lbl_token_est)
+
+        bottom_h.addLayout(input_box, 1)
 
         btn_v = QVBoxLayout()
         self.btn_send = QPushButton("Send")
@@ -247,6 +257,12 @@ class AIAssistantPage(Page):
     def _insert_preset(self, text: str):
         self.prompt_edit.setPlainText(text)
         self.prompt_edit.setFocus()
+        self._update_token_estimate()
+
+    def _update_token_estimate(self):
+        txt = self.prompt_edit.toPlainText().strip()
+        tokens = max(1, len(txt) // 4) if txt else 0
+        self.lbl_token_est.setText(f"Est. tokens: ~{tokens}")
 
     def _append_chat(self, sender: str, text: str):
         import html

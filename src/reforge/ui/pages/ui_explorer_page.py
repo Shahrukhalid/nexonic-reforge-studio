@@ -101,6 +101,11 @@ class VisualUIExplorerPage(Page):
         self.badge_status = QLabel("")
         self.badge_status.setStyleSheet("background-color: #2b3a4a; color: #61afef; padding: 3px 8px; border-radius: 4px; font-weight: bold;")
         ban_lay.addWidget(self.badge_status)
+
+        btn_export_asset = QPushButton("Export Asset…")
+        btn_export_asset.clicked.connect(self._export_selected_asset)
+        ban_lay.addWidget(btn_export_asset)
+
         right_lay.addWidget(self.banner)
 
         # Tabs: Visual Preview, Text/Layout View, Screen Mapping
@@ -282,6 +287,7 @@ class VisualUIExplorerPage(Page):
         if not p.is_file():
             return
 
+        self.current_selected_path = p
         self.lbl_asset_name.setText(p.name)
         is_screenshot = self.screenshots_dir and self.screenshots_dir in p.parents
         self.badge_status.setText("USER REFERENCE SCREENSHOT" if is_screenshot else "VERIFIED EXTRACTED RESOURCE")
@@ -355,3 +361,15 @@ class VisualUIExplorerPage(Page):
 
         for i in range(self.asset_tree.topLevelItemCount()):
             filter_item(self.asset_tree.topLevelItem(i))
+
+    def _export_selected_asset(self):
+        if not hasattr(self, "current_selected_path") or not self.current_selected_path or not self.current_selected_path.is_file():
+            QMessageBox.information(self, "Export Asset", "Please select an asset from the tree first.")
+            return
+
+        save_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Asset", self.current_selected_path.name
+        )
+        if save_path:
+            shutil.copy2(self.current_selected_path, save_path)
+            self.ctx.status(f"Exported asset to {save_path}")

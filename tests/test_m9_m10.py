@@ -8,6 +8,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QMessageBox
 
+import reforge
 from reforge.core.findings import Finding
 from reforge.export.exporter import (
     export_cleanroom_archive,
@@ -166,10 +167,10 @@ def test_packaging_spec_and_installer_files():
     assert "reforge.export" in spec_content
     assert "reforge.reconstruct" in spec_content
     assert "reforge.ai" in spec_content
-    assert '"0.4.0"' in spec_content
+    assert f'"{reforge.__version__}"' in spec_content
 
     # Verify Inno Setup installer script
     iss_path = root / "packaging" / "windows" / "installer.iss"
     assert iss_path.is_file()
     iss_content = iss_path.read_text(encoding="utf-8")
-    assert '#define AppVer "0.4.0"' in iss_content
+    assert f'#define AppVer "{reforge.__version__}"' in iss_content

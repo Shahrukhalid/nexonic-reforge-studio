@@ -175,6 +175,16 @@ def build_reconstructed_project(
     for a in artifacts:
         digests[a.name] = _sha256(a)
 
+    # Bundle standalone archive if artifacts exist
+    if res.ok and artifacts:
+        import zipfile
+        zip_path = dist / f"{name}_dist.zip"
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for a in artifacts:
+                zf.write(a, arcname=a.name)
+        digests[zip_path.name] = _sha256(zip_path)
+        artifacts.append(zip_path)
+
     manifest_file = dist / "build_manifest.json"
     manifest_data = {
         "project": name,
