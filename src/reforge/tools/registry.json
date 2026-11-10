@@ -1251,10 +1251,12 @@
   "detect": "bin:mitmproxy2swagger",
   "priority": 3,
   "notes": "Builds OpenAPI from captured flows",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T18:31:18Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/alufers/mitmproxy2swagger"
  },
  {
   "id": 56,
@@ -1272,10 +1274,12 @@
   "detect": "bin:webcrack",
   "priority": 2,
   "notes": "Node.js tool",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-07-26T22:22:19Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/j4k0xb/webcrack"
  },
  {
   "id": 57,
@@ -1293,10 +1297,12 @@
   "detect": "bin:tshark",
   "priority": 3,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-10T03:18:24Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/wireshark/wireshark"
  },
  {
   "id": 58,
@@ -1314,10 +1320,12 @@
   "detect": "py:scapy",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-08T19:56:14Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/secdev/scapy"
  },
  {
   "id": 59,
@@ -1335,10 +1343,12 @@
   "detect": "bin:zap.sh|zap",
   "priority": 5,
   "notes": "Web-app scanner; only against systems the user is authorized to test",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-06T16:01:57Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/zaproxy/zaproxy"
  },
  {
   "id": 60,
@@ -1356,10 +1366,12 @@
   "detect": "bin:kaitai-struct-compiler",
   "priority": 3,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T19:06:03Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/kaitai-io/kaitai_struct"
  },
  {
   "id": 61,
@@ -1377,10 +1389,12 @@
   "detect": "bin:capa",
   "priority": 1,
   "notes": "Capability detection; capa -j",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-06T06:41:42Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/mandiant/capa"
  },
  {
   "id": 62,
@@ -1398,10 +1412,12 @@
   "detect": "bin:floss",
   "priority": 2,
   "notes": "Obfuscated string recovery (emulation, PE-focused)",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-01T02:40:55Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/mandiant/flare-floss"
  },
  {
   "id": 63,
@@ -1419,10 +1435,12 @@
   "detect": "py:yara_x",
   "priority": 2,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T16:22:17Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/VirusTotal/yara-x"
  },
  {
   "id": 64,
@@ -1440,10 +1458,12 @@
   "detect": "py:unicorn",
   "priority": 3,
   "notes": "CPU emulator (no host execution)",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-18T15:17:01Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/unicorn-engine/unicorn"
  },
  {
   "id": 65,
@@ -1461,10 +1481,12 @@
   "detect": "py:qiling",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-23T23:47:10Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/qilingframework/qiling"
  },
  {
   "id": 66,
@@ -1481,10 +1503,12 @@
   "detect": "bin:drrun",
   "priority": 5,
   "notes": "Executes the target - isolated runtime only; no macOS support",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T23:37:50Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/DynamoRIO/dynamorio"
  },
  {
   "id": 67,
@@ -1502,10 +1526,12 @@
   "detect": "py:triton",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T19:59:21Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/JonathanSalwan/Triton"
  },
  {
   "id": 68,
@@ -1523,10 +1549,12 @@
   "detect": "py:miasm",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-03T14:00:53Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/cea-sec/miasm"
  },
  {
   "id": 69,
@@ -1544,10 +1572,12 @@
   "detect": "bin:angr-management",
   "priority": 5,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-10T00:34:32Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/angr/angr-management"
  },
  {
   "id": 70,
@@ -1565,10 +1595,12 @@
   "detect": "py:pyqbdi",
   "priority": 5,
   "notes": "Executes the target - isolated runtime only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-09-02T15:13:48Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/QBDI/QBDI"
  },
  {
   "id": 71,
@@ -1586,10 +1618,12 @@
   "detect": "",
   "priority": 3,
   "notes": "Ghidra plugin + MCP bridge; bind to localhost only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-08T08:31:41Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/bethington/ghidra-mcp"
  },
  {
   "id": 72,
@@ -1607,10 +1641,12 @@
   "detect": "",
   "priority": 3,
   "notes": "Bind to localhost only",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-10T20:08:37Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/LaurieWired/GhidraMCP"
  },
  {
   "id": 73,
@@ -1628,10 +1664,12 @@
   "detect": "",
   "priority": 3,
   "notes": "JADX-GUI plugin",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-19T00:39:37Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/zinja-coder/jadx-ai-mcp"
  },
  {
   "id": 74,
@@ -1649,10 +1687,12 @@
   "detect": "bin:r2mcp",
   "priority": 3,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-15T23:34:08Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/radareorg/radare2-mcp"
  },
  {
   "id": 75,
@@ -1670,10 +1710,12 @@
   "detect": "",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-06T15:38:46Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/radareorg/r2ai"
  },
  {
   "id": 76,
@@ -1691,10 +1733,12 @@
   "detect": "",
   "priority": 4,
   "notes": "Ghidra plugin",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-16T14:03:16Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/symgraph/GhidrAssist"
  },
  {
   "id": 77,
@@ -1712,10 +1756,12 @@
   "detect": "",
   "priority": 4,
   "notes": "Research model weights; local GPU inference",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-02-12T03:02:03Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/albertan017/LLM4Decompile"
  },
  {
   "id": 78,
@@ -1733,10 +1779,12 @@
   "detect": "",
   "priority": 5,
   "notes": "IDA Pro plugin - requires paid IDA",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-08-15T17:09:38Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/JusticeRage/Gepetto"
  },
  {
   "id": 79,
@@ -1754,10 +1802,12 @@
   "detect": "",
   "priority": 5,
   "notes": "Requires paid IDA Pro",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-09-26T15:42:10Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/mrexodia/ida-pro-mcp"
  },
  {
   "id": 80,
@@ -1775,10 +1825,12 @@
   "detect": "",
   "priority": 5,
   "notes": "Requires paid IDA Pro",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-28T16:59:40Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/HexRaysSA/ida-mcp"
  },
  {
   "id": 81,
@@ -1796,10 +1848,12 @@
   "detect": "bin:binwalk",
   "priority": 2,
   "notes": "v3 is Rust-based",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-08-11T15:27:34Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/ReFirmLabs/binwalk"
  },
  {
   "id": 82,
@@ -1816,10 +1870,12 @@
   "detect": "bin:unblob",
   "priority": 2,
   "notes": "No native Windows support",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T18:58:08Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/onekey-sec/unblob"
  },
  {
   "id": 83,
@@ -1837,10 +1893,12 @@
   "detect": "bin:UEFIExtract",
   "priority": 4,
   "notes": "",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-10-27T14:01:22Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/LongSoft/UEFITool"
  },
  {
   "id": 84,
@@ -1856,10 +1914,12 @@
   "detect": "",
   "priority": 5,
   "notes": "Linux-only, Docker-based",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-09T02:51:15Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/e-m-b-a/emba"
  },
  {
   "id": 85,
@@ -1876,9 +1936,11 @@
   "detect": "py:ofrak",
   "priority": 5,
   "notes": "Licence restricts commercial use - optional, not bundled",
-  "verification": "pending",
-  "maintained": null,
-  "archived": null,
-  "last_push": null
+  "verification": "verified",
+  "maintained": true,
+  "archived": false,
+  "last_push": "2026-11-04T07:20:11Z",
+  "verified_at": "2026-11-10T03:31:14+00:00",
+  "canonical_repo": "https://github.com/redballoonsecurity/ofrak"
  }
 ]

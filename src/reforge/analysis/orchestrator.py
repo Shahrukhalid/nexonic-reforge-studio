@@ -164,6 +164,13 @@ class Orchestrator:
                     self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "ok")
                 except Exception as e:  # noqa: BLE001
                     self.db.log_tool_run(pid, "capstone", f"disasm({rel})", t, "error", str(e))
+                if profile == "deep":
+                    from ..tools.adapters import angr_adapter
+                    if angr_adapter.is_available():
+                        t = time.time()
+                        status, afs = angr_adapter.run_angr(p, rel)
+                        self._rec(pid, afs)
+                        self.db.log_tool_run(pid, "angr", f"angr.analyze({rel})", t, status)
                 if fm == "pe" and dotnet.is_dotnet(p):
                     self._rec(pid, dotnet.analyze(p, rel))
                     fm = "dotnet"

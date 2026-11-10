@@ -82,6 +82,9 @@ ADAPTERS: list[Adapter] = [
 ]
 
 
+from .apktool import run_apktool  # noqa: E402
+from .assetripper import run_assetripper  # noqa: E402
+from .binwalk import run_binwalk  # noqa: E402
 from .decompilers import run_ilspy, run_jadx  # noqa: E402
 from .ghidra import run_ghidra  # noqa: E402
 
@@ -104,6 +107,12 @@ ADAPTERS.append(Adapter("pycdc (Decompyle++)", {"pyc"}, {"standard", "deep"}, ar
 
 ADAPTERS.append(Adapter("Ghidra", {"elf", "pe", "macho", "macho-fat"}, {"deep"}, argv=lambda exe, t: [], timeout=1800,
                         max_subjects=1, runner=run_ghidra))
+ADAPTERS.append(Adapter("Apktool", {"apk"}, {"deep"}, argv=lambda exe, t: [], timeout=1200,
+                        max_subjects=1, runner=run_apktool))
+ADAPTERS.append(Adapter("Binwalk", EXECUTABLES | {"zip", "gzip", "xz", "7z", "tar", "unknown"}, {"deep"},
+                        argv=lambda exe, t: [], timeout=600, max_subjects=1, runner=run_binwalk))
+ADAPTERS.append(Adapter("AssetRipper", {"unity-bundle", "directory"}, {"deep"},
+                        argv=lambda exe, t: [], timeout=1200, max_subjects=1, runner=run_assetripper))
 
 
 def applicable(fmt: str, profile: str) -> list[Adapter]:

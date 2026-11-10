@@ -91,6 +91,36 @@ def _py_version(mod: str) -> str | None:
     return "present"
 
 
+_VERSION_CACHE: dict[str, str | None] = {}
+
+
+def _bin_version(name: str, exe: str) -> str | None:
+    if exe in _VERSION_CACHE:
+        return _VERSION_CACHE[exe]
+    from ..core.safety import run_tool
+    ver: str | None = None
+    flags = ["--version", "-version", "-v", "version"]
+    if "ghidra" in name.lower():
+        p = Path(exe).parent.parent / "Ghidra" / "application.properties"
+        if p.is_file():
+            for line in p.read_text(errors="replace").splitlines():
+                if line.startswith("application.version="):
+                    ver = line.split("=", 1)[1].strip()
+                    break
+    if not ver:
+        for flag in flags:
+            res = run_tool([exe, flag], timeout=2, max_output=4096)
+            out = (res.stdout or res.stderr).strip()
+            if out:
+                import re
+                m = re.search(r"\b(\d+\.\d+(?:\.\d+)?)\b", out)
+                if m:
+                    ver = m.group(1)
+                    break
+    _VERSION_CACHE[exe] = ver
+    return ver
+
+
 def status_of(e: dict) -> ToolStatus:
     if host_os() not in e["platforms"]:
         return ToolStatus(e, S_UNSUPPORTED)
@@ -108,7 +138,8 @@ def status_of(e: dict) -> ToolStatus:
         for exe in det[4:].split("|"):
             loc = _which(exe)
             if loc:
-                return ToolStatus(e, S_INSTALLED, None, loc)
+                ver = _bin_version(e["name"], loc)
+                return ToolStatus(e, S_INSTALLED, ver, loc)
     if e["integration"] == "paid-host":
         return ToolStatus(e, S_PAID)
     if e.get("archived") or e.get("maintained") is False:
