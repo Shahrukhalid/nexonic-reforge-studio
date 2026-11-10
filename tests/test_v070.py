@@ -16,7 +16,6 @@ from reforge.reconstruct.scaffold import (
 )
 from reforge.reconstruct.tests_gen import generate_evidence_tests
 from reforge.ui.main_window import MainWindow
-from reforge.ui.pages.explorer_page import ApplicationExplorerPage
 
 
 def test_release_gate_fail_closed_logic(monkeypatch):
@@ -203,7 +202,7 @@ def test_explorer_page_binary_diff_and_views(db, samples, qapp):
     pid1 = db.create_project("Target A", str(samples["apk"]), "standard")
     pid2 = db.create_project("Target B", str(samples["jar"]), "standard")
 
-    explorer = ApplicationExplorerPage(win.ctx)
+    explorer = win.pages["Application Explorer"]
     explorer.refresh(select=pid1)
 
     assert explorer.tabs.count() >= 6
@@ -221,3 +220,4 @@ def test_explorer_page_binary_diff_and_views(db, samples, qapp):
 
     assert explorer.current_diff_result is not None
     assert explorer.diff_table.rowCount() >= 0
+    win.close()
