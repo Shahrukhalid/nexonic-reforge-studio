@@ -1,7 +1,7 @@
 ; Inno Setup script -> Nexonic_ReForge_Studio_Windows_x64_Setup.exe
 #define AppVer GetEnv("REFORGE_VERSION")
 #if AppVer == ""
-  #define AppVer "0.8.0"
+  #define AppVer "0.9.0"
 #endif
 [Setup]
 AppId={{6B3F3C1E-6A57-4E8B-9D0B-5E2C1B7A9F10}
