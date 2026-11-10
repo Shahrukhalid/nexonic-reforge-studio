@@ -19,6 +19,7 @@ from ..analysis.orchestrator import Orchestrator
 from ..core.db import Database
 from ..core.safety import Limits
 from ..core.tasks import TaskManager
+from .pages.ai_page import AIAssistantPage
 from .pages.common import PlannedPage
 from .pages.explorer_page import ApplicationExplorerPage
 from .pages.main_pages import AnalysisPage, DashboardPage, ImportPage, LogsPage, SettingsPage, ToolsPage
@@ -49,9 +50,6 @@ class QtLogHandler(logging.Handler):
 
 
 PLANNED = [
-    ("AI Assistant", "Milestone 7", "Project-aware chat with BYOK providers (OpenRouter, Anthropic, OpenAI, Gemini) "
-     "and local models (Ollama, llama.cpp). Keys stored in macOS Keychain / Windows Credential Manager. "
-     "Paid usage requires explicit opt-in."),
     ("Reconstruction Studio", "Milestone 8", "Feature selection, specification approval and clean-room project "
      "generation with build/test loop. Generated code is always labelled as newly generated."),
     ("Source Code Workspace", "Milestone 8", "Explorer, editor, search and diff for generated projects."),
@@ -133,7 +131,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.pages = {}
-        order = [DashboardPage, ImportPage, AnalysisPage, ApplicationExplorerPage, VisualUIExplorerPage]
+        order = [DashboardPage, ImportPage, AnalysisPage, ApplicationExplorerPage, VisualUIExplorerPage, AIAssistantPage]
         for cls in order:
             self._add(cls(self.ctx))
         for title, ms, scope in PLANNED:
