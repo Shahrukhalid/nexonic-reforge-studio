@@ -177,7 +177,10 @@ class MainWindow(QMainWindow):
         self.nav.blockSignals(False)
         self.stack.setCurrentIndex(idx)
         page = self.pages[title]
-        page.refresh(**kw) if kw else page.refresh()
+        try:
+            page.refresh(**kw) if kw else page.refresh()
+        except TypeError:
+            page.refresh()
 
     def _on_task_done(self, _tid, status, result):
         self.ctx.status(f"Analysis {status}" + (f": {result}" if status != "done" else ""))

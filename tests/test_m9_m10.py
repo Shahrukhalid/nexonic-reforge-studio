@@ -15,6 +15,8 @@ from reforge.export.exporter import (
     export_sbom,
     sha256_file,
 )
+from reforge.reconstruct.builder import build_reconstructed_project, detect_build_configuration
+from reforge.reconstruct.scaffold import scaffold_project
 from reforge.ui.main_window import MainWindow
 from reforge.ui.pages.export_page import BuildExportPage
 
@@ -97,12 +99,34 @@ def test_export_report_bundle(db, tmp_path: Path):
     assert bundle["sbom"].is_file()
 
 
+def test_build_reconstructed_project(tmp_path: Path):
+    proj_dir = tmp_path / "recon_python"
+    scaffold_project(proj_dir, "My Reconstructed App", "python", ["feat1", "feat2"], "# Spec")
+
+    cfg = detect_build_configuration(proj_dir)
+    assert cfg["language"] == "python"
+    assert "main.py" in cfg["entry"]
+
+    # Test package wheel build
+    res = build_reconstructed_project(proj_dir, target="package")
+    assert res.success is True
+    assert res.output_dir.is_dir()
+    assert (res.output_dir / "build_manifest.json").is_file()
+
+    manifest = json.loads((res.output_dir / "build_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["project"] == "recon_python"
+    assert manifest["success"] is True
+
+
 def test_build_export_page_gui(db, qapp, tmp_path, monkeypatch):
     win = MainWindow()
     win.ctx.db = db
 
     pid = db.create_project(name="gui_proj", input_path=str(tmp_path / "gui.bin"))
     db.update_project(pid, sha256="1234", size=500)
+    p = db.project(pid)
+    recon_dir = Path(p["workdir"]) / "reconstructed" / "gui_recon"
+    scaffold_project(recon_dir, "GUI Recon", "python", [], "# Spec")
 
     page = win.pages["Build & Export"]
     assert isinstance(page, BuildExportPage)
@@ -123,6 +147,11 @@ def test_build_export_page_gui(db, qapp, tmp_path, monkeypatch):
     )
     page._export_report_bundle()
     assert (tmp_path / "export_dir").is_dir()
+
+    # Test build reconstructed binary trigger
+    page.target_bin_sel.setCurrentIndex(1)  # Package target for fast test
+    page._build_reconstructed_binary()
+    assert "Build succeeded" in page.lbl_binary_status.text()
 
     win.close()
 

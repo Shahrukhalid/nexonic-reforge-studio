@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...export import export_cleanroom_archive, export_report_bundle, export_sbom
+from ...reconstruct.builder import build_reconstructed_project, detect_build_configuration
 from .common import Page
 
 
@@ -100,35 +101,69 @@ class BuildExportPage(Page):
 
         self.root.addWidget(f2)
 
-        # 3. Packaging & Installer Workflow Verification Card
+        # 3. Build Reconstructed Desktop Binary Card
         f3 = QFrame()
         f3.setObjectName("Card")
         l3 = QVBoxLayout(f3)
         l3.setContentsMargins(16, 14, 16, 14)
         l3.setSpacing(8)
 
-        t3 = QLabel("3. Installer & Packaging Pipeline")
+        t3 = QLabel("3. Build Reconstructed Desktop Binary")
         t3.setStyleSheet("font-weight: 600; font-size: 13px;")
         l3.addWidget(t3)
 
-        os_label = "Windows (x64 Setup Installer)" if sys.platform == "win32" else ("macOS (Apple Silicon & Intel DMG)" if sys.platform == "darwin" else "Linux (Standalone Bundle)")
-        d3 = QLabel(f"Host Target: {os_label} · Packaging specifications: PyInstaller (reforge.spec), "
-                    f"Inno Setup (installer.iss), macOS DMG (make_dmg.sh).")
+        d3 = QLabel("Compile the independent clean-room software into a standalone executable or package using native compiler toolchains.")
         d3.setWordWrap(True)
         d3.setObjectName("Muted")
         l3.addWidget(d3)
 
-        self.lbl_pack_status = QLabel("Checking packaging configuration…")
-        l3.addWidget(self.lbl_pack_status)
+        self.lbl_binary_status = QLabel("Checking reconstructed project configuration…")
+        l3.addWidget(self.lbl_binary_status)
 
         h3 = QHBoxLayout()
-        btn_verify_pkg = QPushButton("Validate Packaging Configuration")
-        btn_verify_pkg.clicked.connect(self._validate_packaging_config)
-        h3.addWidget(btn_verify_pkg)
+        h3.addWidget(QLabel("Build Target:"))
+        self.target_bin_sel = QComboBox()
+        self.target_bin_sel.addItems(["Standalone Executable (Native Binary)", "Distributable Package (Wheel / Lib)"])
+        h3.addWidget(self.target_bin_sel)
+
+        btn_build_bin = QPushButton("Compile Reconstructed Project")
+        btn_build_bin.setObjectName("Primary")
+        btn_build_bin.clicked.connect(self._build_reconstructed_binary)
+        h3.addWidget(btn_build_bin)
         h3.addStretch(1)
         l3.addLayout(h3)
 
         self.root.addWidget(f3)
+
+        # 4. Packaging & Installer Workflow Verification Card
+        f4 = QFrame()
+        f4.setObjectName("Card")
+        l4 = QVBoxLayout(f4)
+        l4.setContentsMargins(16, 14, 16, 14)
+        l4.setSpacing(8)
+
+        t4 = QLabel("4. Application Installer & Packaging Pipeline")
+        t4.setStyleSheet("font-weight: 600; font-size: 13px;")
+        l4.addWidget(t4)
+
+        os_label = "Windows (x64 Setup Installer)" if sys.platform == "win32" else ("macOS (Apple Silicon & Intel DMG)" if sys.platform == "darwin" else "Linux (Standalone Bundle)")
+        d4 = QLabel(f"Host Target: {os_label} · Packaging specifications: PyInstaller (reforge.spec), "
+                    f"Inno Setup (installer.iss), macOS DMG (make_dmg.sh).")
+        d4.setWordWrap(True)
+        d4.setObjectName("Muted")
+        l4.addWidget(d4)
+
+        self.lbl_pack_status = QLabel("Checking packaging configuration…")
+        l4.addWidget(self.lbl_pack_status)
+
+        h4 = QHBoxLayout()
+        btn_verify_pkg = QPushButton("Validate Packaging Configuration")
+        btn_verify_pkg.clicked.connect(self._validate_packaging_config)
+        h4.addWidget(btn_verify_pkg)
+        h4.addStretch(1)
+        l4.addLayout(h4)
+
+        self.root.addWidget(f4)
         self.root.addStretch(1)
 
         self._check_packaging()
@@ -173,10 +208,47 @@ class BuildExportPage(Page):
             files = list(self.reconstructed_dir.rglob("*"))
             file_count = sum(1 for f in files if f.is_file())
             self.lbl_src_status.setText(f"Clean-room source ready: {file_count} files in reconstructed/")
+            subdirs = [d for d in self.reconstructed_dir.iterdir() if d.is_dir()]
+            target_dir = subdirs[0] if subdirs else self.reconstructed_dir
+            cfg = detect_build_configuration(target_dir)
+            self.lbl_binary_status.setText(f"Project stack: {cfg['language'].title()} ({target_dir.name}) · Ready to compile.")
         else:
             self.lbl_src_status.setText("No clean-room code generated yet (use Reconstruction Studio first).")
+            self.lbl_binary_status.setText("No clean-room code generated yet.")
 
     # ---- Actions -------------------------------------------------------------
+    def _build_reconstructed_binary(self):
+        if not self.reconstructed_dir or not self.reconstructed_dir.is_dir():
+            QMessageBox.warning(self, "Build Error", "No reconstructed project found. Please scaffold a project in Reconstruction Studio first.")
+            return
+
+        subdirs = [d for d in self.reconstructed_dir.iterdir() if d.is_dir()]
+        target_dir = subdirs[0] if subdirs else self.reconstructed_dir
+
+        is_binary = "Standalone" in self.target_bin_sel.currentText()
+        target_mode = "binary" if is_binary else "package"
+
+        self.ctx.status(f"Compiling {target_dir.name} as {target_mode}…")
+        self.lbl_binary_status.setText(f"Compiling {target_dir.name}… (please wait)")
+
+        res = build_reconstructed_project(target_dir, target=target_mode)
+        if res.success:
+            art_names = [a.name for a in res.artifacts]
+            digests_summary = "\n".join(f"- {name}: {digest[:16]}…" for name, digest in res.digests.items())
+            self.ctx.status(f"Build succeeded: {len(res.artifacts)} artifact(s) generated in {res.duration:.1f}s")
+            self.lbl_binary_status.setText(f"Build succeeded in {res.duration:.1f}s: {', '.join(art_names) or 'completed'}")
+            QMessageBox.information(
+                self, "Build Succeeded",
+                f"Successfully compiled {target_dir.name}!\n\n"
+                f"Output directory:\n{res.output_dir}\n\n"
+                f"Artifacts:\n{digests_summary or 'See output directory'}\n\n"
+                f"Build manifest saved to build_manifest.json"
+            )
+        else:
+            err = res.stderr or res.stdout or "Unknown build error"
+            self.ctx.status(f"Build failed for {target_dir.name}")
+            self.lbl_binary_status.setText(f"Build failed: {err[:80]}")
+            QMessageBox.critical(self, "Build Failed", f"Failed to build {target_dir.name}:\n\n{err[:500]}")
     def _export_source_archive(self):
         if not self.reconstructed_dir or not self.reconstructed_dir.is_dir():
             QMessageBox.warning(self, "Export", "No reconstructed project found. Please scaffold a project in Reconstruction Studio first.")

@@ -22,6 +22,7 @@ hidden_mods = [
     "reforge.reconstruct",
     "reforge.reconstruct.scaffold",
     "reforge.reconstruct.runner",
+    "reforge.reconstruct.builder",
     "reforge.export",
     "reforge.export.exporter",
     "reforge.tools.adapters.apktool",
