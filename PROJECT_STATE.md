@@ -10,6 +10,17 @@ _Last updated: 2026-11-10 · v0.8.0 · Publisher: Nexonic Technologies_
   - Release tag immutability has been enforced in `scripts/autopilot.py` to prevent accidental tag rewriting permanently.
 
 ## Published Releases
+- **v0.8.0 (Published 2026-11-10T09:46:26Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.8.0
+  - Release Commit: `c26df0f` (merged via PR #15 with all 7 required CI checks passing)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,801,687 bytes)
+      SHA-256: `1633dc559e21d9c1c71440fb14aac338cc334f3c787a119c02c57a954c19e9e6`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (50,081,021 bytes)
+      SHA-256: `437c1cbcb04e83de4b3a833beb9f4778a43f04194f3503c28b942827b1c04915`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,631,090 bytes)
+      SHA-256: `0215f7b5ba1b7e78e9faf587dfff52daf2116d3616b2dabea48768f234873958`
+    - `SHA256SUMS.txt` (328 bytes — unified manifest verified containing all 3 installer hashes)
 - **v0.7.0 (Published 2026-11-10T08:58:37Z)**
   - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.7.0
   - Release Commit: `cad6093` (fail-closed release gate verified on commit with all 7 required CI checks passing)
