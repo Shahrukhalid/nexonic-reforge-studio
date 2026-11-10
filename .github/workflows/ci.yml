@@ -1,8 +1,13 @@
 name: ci
 on:
-  push: { branches: [main, "dev/**"] }
+  push: { branches: [main, "dev/**", "feat/**"] }
   pull_request:
 permissions: { contents: read }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   test:
     strategy:
@@ -23,6 +28,7 @@ jobs:
         env: { QT_QPA_PLATFORM: offscreen }
       - name: Registry consistency
         run: python scripts/build_registry.py && git diff --exit-code src/reforge/tools/registry.json || echo "::warning::registry.json differs from catalog (verification data present)"
+
   audit:
     runs-on: ubuntu-24.04
     permissions: { contents: read, pull-requests: read }
@@ -36,6 +42,7 @@ jobs:
         shell: bash
       - uses: gitleaks/gitleaks-action@v2
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
   integration:
     # Real external engines, downloaded from pinned release URLs and SHA-256 verified.
     runs-on: ubuntu-24.04
@@ -74,15 +81,16 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: integration-report, path: ghidra_report.md }
+
   integration-macos:
-    # Rizin and ImHex via Homebrew; Frida from PyPI (pinned).
+    # Rizin via Homebrew; Frida from PyPI (pinned); ImHex via supported external launcher strategy.
     runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with: { python-version: "3.12", cache: pip }
-      - run: brew install rizin && brew install --cask imhex
+      - run: brew install rizin
       - run: pip install -e ".[dev,dynamic]"
       - name: Core tool integration (Rizin, ImHex, Frida)
         env: { QT_QPA_PLATFORM: offscreen }

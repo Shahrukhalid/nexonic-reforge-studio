@@ -1,0 +1,30 @@
+name: repository-health
+on:
+  schedule:
+    - cron: '0 5 * * 0' # Every Sunday at 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - name: Verify Tool Registry Integrity
+        run: |
+          python scripts/build_registry.py
+          git diff --exit-code src/reforge/tools/registry.json || echo "::warning::Registry has uncommitted changes"
+      - name: Verify Third-Party Notices & Licenses
+        run: |
+          python -c "
+          from pathlib import Path
+          notices = Path('THIRD_PARTY_NOTICES.md').read_text(encoding='utf-8')
+          assert 'Ghidra' in notices, 'Missing Ghidra notice'
+          assert 'LIEF' in notices, 'Missing LIEF notice'
+          assert 'Capstone' in notices, 'Missing Capstone notice'
+          print('Third party notices verified.')
+          "

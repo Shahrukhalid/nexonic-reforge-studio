@@ -1,0 +1,76 @@
+name: auto-merge
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-24.04
+    if: |
+      (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'auto-merge')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Squash-merge approved PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            let prNumber;
+            if (context.eventName === 'pull_request_target') {
+              prNumber = context.payload.pull_request.number;
+            } else if (context.eventName === 'workflow_run') {
+              const prs = context.payload.workflow_run.pull_requests;
+              if (prs && prs.length > 0) {
+                prNumber = prs[0].number;
+              }
+            }
+
+            if (!prNumber) {
+              console.log('No PR associated with this event.');
+              return;
+            }
+
+            console.log(`Checking merge eligibility for PR #${prNumber}...`);
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if (pr.merged || pr.state !== 'open') {
+              console.log(`PR #${prNumber} is already closed or merged.`);
+              return;
+            }
+
+            // Verify checks on head commit
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: pr.head.sha,
+            });
+
+            const failing = checks.check_runs.filter(c => c.status === 'completed' && c.conclusion === 'failure');
+            if (failing.length > 0) {
+              console.log(`Cannot auto-merge PR #${prNumber}: ${failing.length} check(s) failed.`);
+              return;
+            }
+
+            try {
+              console.log(`Attempting squash merge for PR #${prNumber}...`);
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: `Merge PR #${prNumber}: ${pr.title}`,
+              });
+              console.log(`PR #${prNumber} successfully merged.`);
+            } catch (err) {
+              console.log(`Auto-merge failed or blocked: ${err.message}`);
+            }
