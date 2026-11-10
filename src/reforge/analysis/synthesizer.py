@@ -19,6 +19,28 @@ PROVENANCE_BANNER = """/* ======================================================
  * ==================================================================== */
 """
 
+GENUINE_DECOMPILER_BANNER = """/* ====================================================================
+ * [GENUINE DECOMPILER OUTPUT — EXTRACTED FROM ENGINE]
+ * Function:    {name}
+ * Entrypoint:  {address} (Size: {size} bytes)
+ * Architecture:{arch}
+ * Provenance:  {provenance}
+ * Confidence:  CONFIRMED (Verified decompiler engine output)
+ * Engine:      {engine}
+ * Notice: Genuine decompiler AST/IR representation extracted from target.
+ * ==================================================================== */
+"""
+
+
+@dataclass
+class CFGEdge:
+    source_block: str
+    target_block: str
+    edge_type: str  # "conditional_true", "conditional_false", "unconditional", "fallthrough"
+
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
+
 
 @dataclass
 class CFGBlock:
@@ -27,6 +49,10 @@ class CFGBlock:
     end_addr: str
     instructions: list[str] = field(default_factory=list)
     successors: list[str] = field(default_factory=list)
+    edges: list[dict[str, str]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
@@ -37,13 +63,17 @@ class DecompiledFunction:
     arch: str = "x86-64"
     signature: str = ""
     confidence: str = Confidence.CONFIRMED.value
+    confidence_score: float = 1.0
     provenance: str = Provenance.PARSED.value
+    is_verified_decompiler: bool = False
     assembly_lines: list[str] = field(default_factory=list)
     pseudocode: str = ""
     callers: list[str] = field(default_factory=list)
     callees: list[str] = field(default_factory=list)
     variables: list[dict[str, Any]] = field(default_factory=list)
     cfg_blocks: list[dict[str, Any]] = field(default_factory=list)
+    cyclomatic_complexity: int = 1
+    source_asm_map: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -130,19 +160,23 @@ class DecompilationSynthesizer:
                     arch=val.get("arch", "x86-64"),
                     signature=val.get("signature", f"void {fname}()"),
                     confidence=str(r.get("confidence", Confidence.CONFIRMED.value)),
+                    confidence_score=float(val.get("confidence_score", 0.90)),
                     provenance=str(r.get("provenance", Provenance.PARSED.value)),
+                    is_verified_decompiler=bool(val.get("is_verified_decompiler", False)),
                     assembly_lines=val.get("assembly_lines", []),
                     pseudocode=val.get("code", ""),
                     callers=val.get("callers", []),
                     callees=val.get("callees", []),
                     variables=val.get("variables", []),
                     cfg_blocks=val.get("cfg_blocks", []),
+                    cyclomatic_complexity=int(val.get("cyclomatic_complexity", 1)),
+                    source_asm_map=val.get("source_asm_map", []),
                 )
                 functions_map[fname] = fn
                 if faddr and faddr != "0x0":
                     functions_map[faddr] = fn
 
-        # Process Ghidra / JADX / ILSpy functions first if present
+        # Process Ghidra / JADX / ILSpy functions if present
         for gf in ghidra_funcs:
             name = gf.get("name", "sub_unknown")
             addr = str(gf.get("entry", "0x0"))
@@ -150,19 +184,36 @@ class DecompilationSynthesizer:
             sig = gf.get("signature") or f"void {name}()"
             dec_info = decompiled_code.get(name, {})
             raw_code = dec_info.get("code", "")
+            engine_name = dec_info.get("tool") or "ghidra"
 
-            confidence = Confidence.CONFIRMED.value if raw_code else Confidence.STRONG.value
-            provenance = Provenance.DECOMPILED.value if raw_code else Provenance.PARSED.value
-
-            header = PROVENANCE_BANNER.format(
-                name=name,
-                address=addr,
-                size=size,
-                arch="native",
-                provenance=provenance,
-                confidence=confidence,
-            )
-            full_code = header + "\n" + (raw_code if raw_code else f"// [NO DECOMPILED CODE AVAILABLE - DISASSEMBLY ONLY]\n// Signature: {sig}")
+            if raw_code:
+                confidence = Confidence.CONFIRMED.value
+                confidence_score = 1.0
+                provenance = Provenance.DECOMPILED.value
+                is_verified = True
+                header = GENUINE_DECOMPILER_BANNER.format(
+                    name=name,
+                    address=addr,
+                    size=size,
+                    arch="native",
+                    provenance=provenance,
+                    engine=engine_name.capitalize(),
+                )
+                full_code = header + "\n" + raw_code
+            else:
+                confidence = Confidence.STRONG.value
+                confidence_score = 0.85
+                provenance = Provenance.PARSED.value
+                is_verified = False
+                header = PROVENANCE_BANNER.format(
+                    name=name,
+                    address=addr,
+                    size=size,
+                    arch="native",
+                    provenance=provenance,
+                    confidence=confidence,
+                )
+                full_code = header + "\n" + f"// [NO DECOMPILED CODE AVAILABLE - DISASSEMBLY ONLY]\n// Signature: {sig}"
 
             fn = DecompiledFunction(
                 name=name,
@@ -170,7 +221,9 @@ class DecompilationSynthesizer:
                 size=size,
                 signature=sig,
                 confidence=confidence,
+                confidence_score=confidence_score,
                 provenance=provenance,
+                is_verified_decompiler=is_verified,
                 pseudocode=full_code,
             )
             functions_map[name] = fn
@@ -194,7 +247,7 @@ class DecompilationSynthesizer:
                 clean_name = symbols.get(addr, f"func_{addr}")
 
             # Synthesize pseudocode and basic blocks from disassembly
-            synth_pseudo, blocks, callees, vars_found = cls._synthesize_pseudocode(
+            synth_pseudo, blocks, callees, vars_found, asm_map, complexity = cls._synthesize_pseudocode(
                 name=clean_name,
                 address=addr,
                 arch=arch,
@@ -208,9 +261,11 @@ class DecompilationSynthesizer:
                 existing.arch = arch
                 if not existing.pseudocode or "[NO DECOMPILED CODE AVAILABLE" in existing.pseudocode:
                     existing.pseudocode = synth_pseudo
-                existing.cfg_blocks = [asdict(b) if isinstance(b, CFGBlock) else b for b in blocks]
+                existing.cfg_blocks = [b.to_dict() if isinstance(b, CFGBlock) else b for b in blocks]
                 existing.callees = sorted(set(existing.callees + callees))
                 existing.variables = vars_found
+                existing.source_asm_map = asm_map
+                existing.cyclomatic_complexity = complexity
             else:
                 fn = DecompiledFunction(
                     name=clean_name,
@@ -219,12 +274,16 @@ class DecompilationSynthesizer:
                     arch=arch,
                     signature=f"int {clean_name}()",
                     confidence=Confidence.TENTATIVE.value,
+                    confidence_score=0.75,
                     provenance=Provenance.INFERRED.value,
+                    is_verified_decompiler=False,
                     assembly_lines=lines,
                     pseudocode=synth_pseudo,
                     callees=callees,
-                    cfg_blocks=[asdict(b) for b in blocks],
+                    cfg_blocks=[b.to_dict() for b in blocks],
                     variables=vars_found,
+                    cyclomatic_complexity=complexity,
+                    source_asm_map=asm_map,
                 )
                 functions_map[clean_name] = fn
                 functions_map[addr] = fn
@@ -255,11 +314,12 @@ class DecompilationSynthesizer:
         arch: str,
         asm_lines: list[str],
         symbols: dict[str, str],
-    ) -> tuple[str, list[CFGBlock], list[str], list[dict[str, Any]]]:
-        """Convert linear disassembly into evidence-linked pseudocode and CFG basic blocks."""
+    ) -> tuple[str, list[CFGBlock], list[str], list[dict[str, Any]], list[dict[str, Any]], int]:
+        """Convert linear disassembly into evidence-linked pseudocode, CFG basic blocks, and source-to-asm map."""
         callees: list[str] = []
         variables: list[dict[str, Any]] = []
         blocks: list[CFGBlock] = []
+        source_asm_map: list[dict[str, Any]] = []
 
         code_lines: list[str] = []
         curr_block_insns: list[str] = []
@@ -281,7 +341,7 @@ class DecompilationSynthesizer:
         indent = "    "
         in_prologue = True
 
-        for raw_line in asm_lines:
+        for i, raw_line in enumerate(asm_lines):
             curr_block_insns.append(raw_line)
             # Parse address, bytes, mnemonic, operands
             parts = [p.strip() for p in re.split(r"\s{2,}", raw_line) if p.strip()]
@@ -307,11 +367,13 @@ class DecompilationSynthesizer:
 
             mnemonic = mnemonic.lower()
             operands = operands.strip()
+            curr_line_no = len(code_lines) + 1
 
             # Check prologue
             if mnemonic in ("push", "mov") and any(r in operands for r in ("rbp", "ebp", "fp")):
                 if in_prologue:
                     code_lines.append(f"{indent}/* {addr_str} */  // [Function Prologue: stack frame setup]")
+                    source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
                     continue
             else:
                 in_prologue = False
@@ -322,36 +384,66 @@ class DecompilationSynthesizer:
                 resolved = symbols.get(target, target)
                 callees.append(resolved)
                 code_lines.append(f"{indent}/* {addr_str} */  result = {resolved}();")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
 
             # Comparisons and jumps
             elif mnemonic in ("cmp", "test"):
                 code_lines.append(f"{indent}/* {addr_str} */  flags = compare({operands});")
-            elif mnemonic.startswith("j"):
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
+
+            elif mnemonic.startswith("j") or mnemonic in ("b", "bx", "cbz", "cbnz"):
                 target = operands.strip()
                 resolved = symbols.get(target, target)
-                if mnemonic == "jmp":
+                is_uncond = mnemonic in ("jmp", "b", "bx")
+                if is_uncond:
                     code_lines.append(f"{indent}/* {addr_str} */  goto {resolved};")
                 else:
-                    cond = mnemonic[1:]  # e.g. e, ne, g, l
+                    cond = mnemonic[1:] if mnemonic.startswith("j") else mnemonic
                     code_lines.append(f"{indent}/* {addr_str} */  if (condition_{cond}(flags)) goto {resolved};")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
 
-                # End of a basic block
+                # End of a basic block: calculate edges and successors
+                successors = [target]
+                edges = [{"source_block": f"bb_{block_idx}", "target_block": target, "edge_type": "unconditional" if is_uncond else "conditional_true"}]
+
+                # For conditional jumps, also add fallthrough to the next instruction
+                if not is_uncond and i + 1 < len(asm_lines):
+                    next_addr = asm_lines[i + 1].split()[0]
+                    successors.append(next_addr)
+                    edges.append({"source_block": f"bb_{block_idx}", "target_block": next_addr, "edge_type": "conditional_false"})
+
                 blocks.append(
                     CFGBlock(
                         id=f"bb_{block_idx}",
                         start_addr=block_start,
                         end_addr=addr_str,
                         instructions=list(curr_block_insns),
-                        successors=[target],
+                        successors=successors,
+                        edges=edges,
                     )
                 )
                 block_idx += 1
                 curr_block_insns = []
-                block_start = addr_str
+                block_start = asm_lines[i + 1].split()[0] if i + 1 < len(asm_lines) else addr_str
 
             # Returns
             elif mnemonic in ("ret", "retq"):
                 code_lines.append(f"{indent}/* {addr_str} */  return result;  // [Function Epilogue]")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
+                blocks.append(
+                    CFGBlock(
+                        id=f"bb_{block_idx}",
+                        start_addr=block_start,
+                        end_addr=addr_str,
+                        instructions=list(curr_block_insns),
+                        successors=[],
+                        edges=[],
+                    )
+                )
+                block_idx += 1
+                curr_block_insns = []
+                block_start = asm_lines[i + 1].split()[0] if i + 1 < len(asm_lines) else addr_str
+
             # Assignments and arithmetic
             elif mnemonic in ("mov", "movzx", "movsx", "ldr"):
                 if "," in operands:
@@ -359,17 +451,26 @@ class DecompilationSynthesizer:
                     code_lines.append(f"{indent}/* {addr_str} */  {dst} = {src};")
                 else:
                     code_lines.append(f"{indent}/* {addr_str} */  // {mnemonic} {operands}")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
+
             elif mnemonic in ("add", "sub", "xor", "and", "or"):
                 if "," in operands:
                     dst, src = (o.strip() for o in operands.split(",", 1))
                     op = {"add": "+=", "sub": "-=", "xor": "^=", "and": "&=", "or": "|="}.get(mnemonic, "=")
                     code_lines.append(f"{indent}/* {addr_str} */  {dst} {op} {src};")
+                else:
+                    code_lines.append(f"{indent}/* {addr_str} */  // {mnemonic} {operands}")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
+
             elif mnemonic == "lea":
                 if "," in operands:
                     dst, src = (o.strip() for o in operands.split(",", 1))
                     code_lines.append(f"{indent}/* {addr_str} */  {dst} = &({src});")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
+
             else:
                 code_lines.append(f"{indent}/* {addr_str} */  // [OP] {mnemonic} {operands}")
+                source_asm_map.append({"line_no": curr_line_no, "address": addr_str, "instruction": f"{mnemonic} {operands}"})
 
         code_lines.append("}\n")
 
@@ -382,10 +483,16 @@ class DecompilationSynthesizer:
                     end_addr=asm_lines[-1].split()[0] if asm_lines else address,
                     instructions=list(curr_block_insns),
                     successors=[],
+                    edges=[],
                 )
             )
 
-        return "\n".join(code_lines), blocks, sorted(set(callees)), variables
+        # Calculate Cyclomatic Complexity: M = E - N + 2P (P=1)
+        num_nodes = len(blocks)
+        num_edges = sum(len(b.successors) for b in blocks)
+        cyclomatic_complexity = max(1, num_edges - num_nodes + 2) if num_nodes > 0 else 1
+
+        return "\n".join(code_lines), blocks, sorted(set(callees)), variables, source_asm_map, cyclomatic_complexity
 
     @classmethod
     def to_findings(
@@ -412,6 +519,10 @@ class DecompilationSynthesizer:
                         "callers": fn.callers,
                         "callees": fn.callees,
                         "cfg_blocks": fn.cfg_blocks,
+                        "cyclomatic_complexity": fn.cyclomatic_complexity,
+                        "is_verified_decompiler": fn.is_verified_decompiler,
+                        "confidence_score": fn.confidence_score,
+                        "source_asm_map": fn.source_asm_map,
                     },
                     confidence=Confidence(fn.confidence) if fn.confidence in Confidence._value2member_map_ else Confidence.TENTATIVE,
                     provenance=Provenance(fn.provenance) if fn.provenance in Provenance._value2member_map_ else Provenance.INFERRED,

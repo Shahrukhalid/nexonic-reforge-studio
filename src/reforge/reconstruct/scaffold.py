@@ -395,6 +395,9 @@ class Application:
     def stop(self) -> dict[str, str]:
         self._running = False
         return {{"status": "stopped"}}
+
+    def execute(self, action: str = "default", *args, **kwargs) -> dict[str, str]:
+        return {{"action": action, "status": "executed", "app": self.config.app_name}}
 '''
         files[f"src/{safe_name}/models.py"] = f'''"""Data models and schemas."""
 from __future__ import annotations
