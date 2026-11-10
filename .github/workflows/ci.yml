@@ -78,7 +78,7 @@ jobs:
           reforge-cli doctor
           reforge-cli analyze /usr/bin/ls --profile deep --report ghidra_report.md
           grep -c "decompiled" ghidra_report.md
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: integration-report, path: ghidra_report.md }
 
