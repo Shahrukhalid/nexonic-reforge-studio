@@ -7,7 +7,15 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFontDatabase
+from PySide6.QtGui import (
+    QColor,
+    QFontDatabase,
+    QKeySequence,
+    QShortcut,
+    QTextCharFormat,
+    QTextCursor,
+    QTextDocument,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -28,6 +36,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -37,6 +46,7 @@ from ...analysis import report
 from ...analysis.orchestrator import PROFILES
 from ...core import paths
 from ...tools import registry
+from ..highlighter import CodeHighlighter
 from ..theme import status_color
 from .common import Page, card
 
@@ -310,14 +320,72 @@ class AnalysisPage(Page):
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setStretchLastSection(True)
         self.tree.currentItemChanged.connect(self._show)
+
+        # Right pane: Search bar + Syntax highlighted code/disassembly viewer
+        detail_w = QFrame()
+        detail_lay = QVBoxLayout(detail_w)
+        detail_lay.setContentsMargins(0, 0, 0, 0)
+        detail_lay.setSpacing(4)
+
+        # Interactive Find Bar (Ctrl+F)
+        self.find_bar = QFrame()
+        self.find_bar.setObjectName("Card")
+        self.find_bar.hide()
+        fb_lay = QHBoxLayout(self.find_bar)
+        fb_lay.setContentsMargins(8, 4, 8, 4)
+        fb_lay.setSpacing(6)
+
+        lbl_f = QLabel("Find:")
+        lbl_f.setStyleSheet("font-weight: 600;")
+        fb_lay.addWidget(lbl_f)
+
+        self.find_input = QLineEdit()
+        self.find_input.setPlaceholderText("Search code or disassembly (Ctrl+F)…")
+        self.find_input.textChanged.connect(self._on_find_text_changed)
+        self.find_input.returnPressed.connect(lambda: self._find_next(forward=True))
+        fb_lay.addWidget(self.find_input, 1)
+
+        self.btn_find_prev = QPushButton("▲")
+        self.btn_find_prev.setFixedWidth(28)
+        self.btn_find_prev.setToolTip("Previous match (Shift+Enter)")
+        self.btn_find_prev.clicked.connect(lambda: self._find_next(forward=False))
+        fb_lay.addWidget(self.btn_find_prev)
+
+        self.btn_find_next = QPushButton("▼")
+        self.btn_find_next.setFixedWidth(28)
+        self.btn_find_next.setToolTip("Next match (Enter)")
+        self.btn_find_next.clicked.connect(lambda: self._find_next(forward=True))
+        fb_lay.addWidget(self.btn_find_next)
+
+        self.lbl_find_count = QLabel("")
+        self.lbl_find_count.setStyleSheet("color: #888888; font-size: 11px;")
+        fb_lay.addWidget(self.lbl_find_count)
+
+        btn_find_close = QPushButton("✕")
+        btn_find_close.setFixedWidth(24)
+        btn_find_close.setToolTip("Close (Esc)")
+        btn_find_close.clicked.connect(self._close_find_bar)
+        fb_lay.addWidget(btn_find_close)
+
+        detail_lay.addWidget(self.find_bar)
+
         self.detail = QPlainTextEdit()
         self.detail.setReadOnly(True)
         self.detail.setLineWrapMode(QPlainTextEdit.NoWrap)
         self.detail.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+        self.highlighter = CodeHighlighter(self.detail.document(), theme=self.ctx.theme)
+        detail_lay.addWidget(self.detail, 1)
+
         split.addWidget(self.tree)
-        split.addWidget(self.detail)
-        split.setSizes([520, 520])
+        split.addWidget(detail_w)
+        split.setSizes([480, 560])
         self.root.addWidget(split, 1)
+
+        # Shortcuts
+        self.sc_find = QShortcut(QKeySequence.Find, self)
+        self.sc_find.activated.connect(self._open_find_bar)
+        self.sc_esc = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        self.sc_esc.activated.connect(self._close_find_bar)
         self._rows: list[dict] = []
         self._ids: list[int] = []
 
@@ -406,6 +474,7 @@ class AnalysisPage(Page):
         v = r["value"]
         if isinstance(v, dict) and "lines" in v:
             body = f"; {v.get('arch')} @ {v.get('address')}\n" + "\n".join(v["lines"])
+            self.highlighter.set_language("asm")
         elif isinstance(v, dict) and "code" in v:
             if r["provenance"] == "decompiled":
                 head_c = "// DECOMPILED REPRESENTATION - not original source code\n"
@@ -414,9 +483,88 @@ class AnalysisPage(Page):
             else:
                 head_c = f"<!-- decoded from the file's own structure ({r['provenance']}) -->\n"
             body = head_c + "\n" + v["code"]
+            subj = (r.get("subject") or "").lower()
+            key = (r.get("key") or "").lower()
+            if subj.endswith(".py") or "python" in key:
+                self.highlighter.set_language("python")
+            elif subj.endswith(".cs") or "dotnet" in key or "csharp" in key:
+                self.highlighter.set_language("csharp")
+            elif subj.endswith(".java") or "jadx" in key or "java" in key:
+                self.highlighter.set_language("java")
+            elif subj.endswith((".xml", ".axml", ".xaml")) or "manifest" in key:
+                self.highlighter.set_language("xml")
+            else:
+                self.highlighter.set_language("c")
         else:
             body = json.dumps(v, indent=2, default=str)
+            self.highlighter.set_language("json")
         self.detail.setPlainText(head + body)
+        self.highlighter.rehighlight()
+        if not self.find_bar.isHidden() and self.find_input.text():
+            self._on_find_text_changed(self.find_input.text())
+
+    def _open_find_bar(self):
+        self.find_bar.show()
+        self.find_input.selectAll()
+        self.find_input.setFocus()
+        if self.find_input.text():
+            self._on_find_text_changed(self.find_input.text())
+
+    def _close_find_bar(self):
+        self.find_bar.hide()
+        self.detail.setExtraSelections([])
+        self.lbl_find_count.setText("")
+        self.detail.setFocus()
+
+    def _on_find_text_changed(self, text: str):
+        if not text:
+            self.detail.setExtraSelections([])
+            self.lbl_find_count.setText("")
+            return
+
+        doc = self.detail.document()
+        selections = []
+        cursor = QTextCursor(doc)
+        fmt = QTextCharFormat()
+        is_dark = getattr(self.ctx, "theme", "dark") == "dark"
+        fmt.setBackground(QColor("#5c4308" if is_dark else "#fff3a8"))
+
+        count = 0
+        while True:
+            cursor = doc.find(text, cursor)
+            if cursor.isNull():
+                break
+            sel = QTextEdit.ExtraSelection()
+            sel.format = fmt
+            sel.cursor = cursor
+            selections.append(sel)
+            count += 1
+            if count > 1000:
+                break
+
+        self.detail.setExtraSelections(selections)
+        self.lbl_find_count.setText(f"{count} match{'es' if count != 1 else ''}")
+        if count > 0:
+            self._find_next(forward=True)
+
+    def _find_next(self, forward: bool = True):
+        text = self.find_input.text()
+        if not text:
+            return
+        flags = QTextDocument.FindFlags()
+        if not forward:
+            flags |= QTextDocument.FindBackward
+
+        found = self.detail.find(text, flags)
+        if not found:
+            # Wrap search around
+            cursor = self.detail.textCursor()
+            if forward:
+                cursor.movePosition(QTextCursor.Start)
+            else:
+                cursor.movePosition(QTextCursor.End)
+            self.detail.setTextCursor(cursor)
+            self.detail.find(text, flags)
 
     def _rerun(self):
         pid = self._pid()

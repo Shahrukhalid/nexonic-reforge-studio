@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -335,20 +336,66 @@ class ApplicationExplorerPage(Page):
             for r in ghidra_runs:
                 cg = r["value"]
                 if isinstance(cg, dict):
-                    for caller, callees in list(cg.items())[:100]:
+                    for caller, callees in list(cg.items())[:150]:
                         item = QTreeWidgetItem(self.tree_calls, [caller, f"Calls {len(callees)} targets", ""])
                         item.setData(0, Qt.UserRole, r)
                         for c in callees:
                             sub = QTreeWidgetItem(item, [c, "-> Callee", ""])
                             sub.setData(0, Qt.UserRole, r)
-        else:
-            # Fallback to disassembly entry points
-            disasm_runs = [r for r in rows if r["stage"] == "disasm"]
-            for r in disasm_runs:
-                v = r["value"]
-                if isinstance(v, dict):
-                    item = QTreeWidgetItem(self.tree_calls, [v.get("function", r["key"]), "Entry / Export", v.get("address", "")])
-                    item.setData(0, Qt.UserRole, r)
+            return
+
+        # Deep static extraction from linear disassembly & imports
+        disasm_runs = [r for r in rows if r["stage"] == "disasm"]
+        if not disasm_runs:
+            return
+
+        # Build symbol map of known addresses and imports
+        import_symbols = set()
+        for r in rows:
+            if r["kind"] == "imports" and isinstance(r["value"], dict) and "items" in r["value"]:
+                import_symbols.update(r["value"]["items"])
+
+        func_by_addr: dict[str, dict] = {}
+        for r in disasm_runs:
+            v = r["value"]
+            if isinstance(v, dict) and "address" in v:
+                addr_str = str(v["address"]).lower()
+                func_by_addr[addr_str] = r
+                if addr_str.startswith("0x"):
+                    try:
+                        func_by_addr[hex(int(addr_str, 16)).lower()] = r
+                    except ValueError:
+                        pass
+
+        call_rx = re.compile(r"\b(call|jmp|bl|bx|blx)\s+(0x[0-9a-fA-F]+|[a-zA-Z0-9_]+)\b", re.IGNORECASE)
+
+        for r in disasm_runs:
+            v = r["value"]
+            if not isinstance(v, dict):
+                continue
+            fname = v.get("function") or r["key"].replace("disassembly · ", "")
+            faddr = v.get("address", "")
+            lines = v.get("lines", [])
+
+            callees = []
+            for line in lines:
+                m = call_rx.search(line)
+                if m:
+                    inst = m.group(1).lower()
+                    target = m.group(2)
+                    label = f"-> {inst} {target}"
+                    target_finding = func_by_addr.get(target.lower())
+                    if target in import_symbols:
+                        label += " (Imported API)"
+                    elif target_finding:
+                        label += f" ({target_finding['key']})"
+                    callees.append((target, label, target_finding or r))
+
+            item = QTreeWidgetItem(self.tree_calls, [fname, f"{len(callees)} branch/call targets" if callees else "Leaf function", faddr])
+            item.setData(0, Qt.UserRole, r)
+            for target, label, finding_ref in callees:
+                sub = QTreeWidgetItem(item, [target, label, ""])
+                sub.setData(0, Qt.UserRole, finding_ref)
 
     # ---- Selection Handlers --------------------------------------------------
     def _on_struct_selected(self, cur: QTreeWidgetItem, _prev):

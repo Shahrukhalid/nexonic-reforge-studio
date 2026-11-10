@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0] - 2026-11-10
+### Added
+- **Interactive Decompilation & Disassembly Viewer**:
+  - Assembly syntax highlighting (`CodeHighlighter`) for x86/x64 and ARM/ARM64 mnemonics, registers, memory addresses, and comments.
+  - JSON syntax highlighting for keys, strings, numbers, and boolean literals.
+  - In-line Find Bar (`Ctrl+F`, `Esc`) in Analysis Workspace with previous/next navigation, wrap-around search, and live match counter.
+- **Deep Call Graph & Cross-Reference Explorer**:
+  - Linear disassembly branch/call instruction parser (`call`, `jmp`, `bl`, `bx`, etc.) constructing caller -> callee cross-references even in headless environments.
+  - Bidirectional symbol resolution against imported and exported functions.
+- **Reconstruction Studio Multi-Module Scaffolding & Spec Generator**:
+  - Automated `generate_specification` synthesizing binary architecture, external libraries, API routes, and indicator schemas into clean-room `SPECIFICATION.md`.
+  - Multi-module clean-room scaffolding (`core.py`, `models.py`, `client.py`, `cli.py`, `tests/`) for Python, TypeScript, Rust, and Go.
+
 ## [0.5.2] - 2026-11-10
 ### Fixed & Hardened
 - **Release Checksum Aggregation**:

@@ -43,6 +43,16 @@ class CodeHighlighter(QSyntaxHighlighter):
         self.fmt_attr = QTextCharFormat()
         self.fmt_attr.setForeground(QColor("#d19a66" if is_dark else "#986801"))
 
+        self.fmt_reg = QTextCharFormat()
+        self.fmt_reg.setForeground(QColor("#61afef" if is_dark else "#0184bc"))
+
+        self.fmt_inst = QTextCharFormat()
+        self.fmt_inst.setForeground(QColor("#e06c75" if is_dark else "#e45649"))
+        self.fmt_inst.setFontWeight(QFont.Bold)
+
+        self.fmt_addr = QTextCharFormat()
+        self.fmt_addr.setForeground(QColor("#c678dd" if is_dark else "#a626a4"))
+
     def _build_rules(self):
         self.rules.clear()
         if self.lang in ("xml", "html", "xaml", "axml"):
@@ -56,6 +66,68 @@ class CodeHighlighter(QSyntaxHighlighter):
             self.rules.append((re.compile(r"'[^'\\]*(\\.[^'\\]*)*'"), self.fmt_str))
             # Comments: <!-- ... -->
             self.rules.append((re.compile(r"<!--[^\n]*?-->"), self.fmt_comment))
+            return
+
+        if self.lang in ("asm", "assembly", "disasm", "s"):
+            # Comments (; or // or #)
+            self.rules.append((re.compile(r";[^\n]*"), self.fmt_comment))
+            self.rules.append((re.compile(r"//[^\n]*"), self.fmt_comment))
+            self.rules.append((re.compile(r"#[^\n]*"), self.fmt_comment))
+
+            # Addresses (0x... or 8+ hex digits at word boundary)
+            self.rules.append((re.compile(r"\b0x[0-9a-fA-F]+\b|\b[0-9a-fA-F]{8,16}\b"), self.fmt_addr))
+
+            # Assembly Mnemonics (x86/x64 and ARM/ARM64)
+            mnemonics = [
+                "mov", "movzx", "movsx", "movsxd", "lea", "push", "pop", "call", "jmp",
+                "je", "jne", "jz", "jnz", "ja", "jae", "jb", "jbe", "jg", "jge", "jl",
+                "jle", "js", "jns", "jo", "jno", "test", "cmp", "add", "sub", "imul",
+                "idiv", "mul", "div", "inc", "dec", "xor", "and", "or", "not", "shl",
+                "shr", "sar", "rol", "ror", "ret", "retq", "nop", "int", "syscall",
+                "sysenter", "hlt", "leave", "enter", "cqo", "cdq", "cbw", "cwde",
+                "clflush", "cpuid", "cmova", "cmovb", "cmove", "cmovne", "cmovg", "cmovl",
+                "seta", "setb", "sete", "setne", "setg", "setl", "setz", "setnz",
+                "ldr", "ldrb", "ldrh", "str", "strb", "strh", "ldp", "stp", "b", "bl",
+                "bx", "blx", "cbz", "cbnz", "tbz", "tbnz", "adr", "adrp", "svc", "mrs",
+                "msr", "ubfx", "sbfx", "lsl", "lsr", "asr",
+            ]
+            mnem_re = r"\b(" + "|".join(mnemonics) + r")\b"
+            self.rules.append((re.compile(mnem_re, re.IGNORECASE), self.fmt_inst))
+
+            # Registers (x86, x64, ARM, ARM64)
+            regs = [
+                "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "rip",
+                "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+                "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eip",
+                "ax", "bx", "cx", "dx", "si", "di", "bp", "sp", "ip",
+                "al", "bl", "cl", "dl", "ah", "bh", "ch", "dh",
+                "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d",
+                "r8w", "r9w", "r10w", "r11w", "r12w", "r13w", "r14w", "r15w",
+                "r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b",
+                "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
+                "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19",
+                "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30",
+                "w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9",
+                "w10", "w11", "w12", "w13", "w14", "w15", "w16", "w17", "w18", "w19",
+                "w20", "w21", "w22", "w23", "w24", "w25", "w26", "w27", "w28", "w29", "w30",
+                "lr", "pc", "cpsr", "fpsr", "fpcr",
+            ]
+            reg_re = r"\b(" + "|".join(regs) + r")\b"
+            self.rules.append((re.compile(reg_re, re.IGNORECASE), self.fmt_reg))
+
+            # Numeric constants
+            self.rules.append((re.compile(r"\b\d+\b"), self.fmt_num))
+            return
+
+        if self.lang == "json":
+            # JSON Property keys
+            self.rules.append((re.compile(r'"[^"\\]*(\\.[^"\\]*)*"\s*(?=:)'), self.fmt_tag))
+            # JSON Strings
+            self.rules.append((re.compile(r':\s*"[^"\\]*(\\.[^"\\]*)*"'), self.fmt_str))
+            # JSON Numbers
+            self.rules.append((re.compile(r"\b-?\d+(\.\d+)?([eE][+-]?\d+)?\b"), self.fmt_num))
+            # JSON Booleans and null
+            self.rules.append((re.compile(r"\b(true|false|null)\b"), self.fmt_kw))
             return
 
         # General keywords
