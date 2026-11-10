@@ -87,7 +87,13 @@ jobs:
       - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install -e ".[dev]"
-      - run: pytest -q
+      - name: Run pytest (Windows)
+        if: runner.os == 'Windows'
+        run: pytest -q --capture=sys
+        env: { QT_QPA_PLATFORM: offscreen }
+      - name: Run pytest (Unix)
+        if: runner.os != 'Windows'
+        run: pytest -q
         env: { QT_QPA_PLATFORM: offscreen }
       - run: pyinstaller --noconfirm --distpath ../dist --workpath ../build reforge.spec
         working-directory: packaging
