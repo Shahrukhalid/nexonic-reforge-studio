@@ -17,7 +17,19 @@ from ..core.findings import Confidence, Finding, Provenance
 from ..core.safety import Limits, UnsafeInput
 from ..core.tasks import TaskContext
 from ..tools import adapters
-from . import android, binary, disasm, dotnet, extract, fingerprint, identify, msi, pyinstaller, strings
+from . import (
+    android,
+    binary,
+    disasm,
+    dotnet,
+    extract,
+    fingerprint,
+    identify,
+    msi,
+    pyinstaller,
+    strings,
+    synthesizer,
+)
 from .cache import AnalysisCache
 
 log = logging.getLogger("reforge.orchestrator")
@@ -242,6 +254,15 @@ class Orchestrator:
                 self._rec(pid, fs)
                 self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached_findings else "(not installed)"), t, status,
                                      res.stderr[-500:] if res and not res.ok else "")
+
+        # Decompilation & Pseudocode Synthesis
+        try:
+            all_findings = self.db.findings(pid)
+            synth_funcs = synthesizer.DecompilationSynthesizer.synthesize_from_findings(all_findings, src.name)
+            if synth_funcs:
+                self._rec(pid, synthesizer.DecompilationSynthesizer.to_findings(synth_funcs, src.name))
+        except Exception as e:  # noqa: BLE001
+            log.warning("Decompilation synthesizer notice: %s", e)
 
         ctx.progress(95, "Summarising")
         self._rec(pid, [_feasibility(self.db.findings(pid), ident.fmt)])

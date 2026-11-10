@@ -4,11 +4,153 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .tests_gen import generate_evidence_tests
+
 CLEAN_ROOM_NOTICE = """# Clean-Room Implementation Notice
 This codebase was developed independently through clean-room software engineering
 based solely on functional requirements, interface specifications, and authorized analysis.
 No proprietary source code was copied or directly decompiled into this project.
 """
+
+MIT_LICENSE = """MIT License
+
+Copyright (c) 2026 Nexonic Technologies & Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+APACHE_2_0_LICENSE = """                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity.
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License.
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      patent license to make, have made, use, offer to sell, sell, import,
+      and otherwise transfer the Work.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+      (a) You must give any other recipients of the Work or Derivative
+          Works a copy of this License; and
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work; and
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file.
+
+   5. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE.
+"""
+
+BSD_3_CLAUSE_LICENSE = """Copyright (c) 2026, Nexonic Technologies & Contributors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+PROPRIETARY_LICENSE = """Copyright (c) 2026 Nexonic Technologies. All Rights Reserved.
+
+CONFIDENTIAL AND PROPRIETARY SOFTWARE.
+
+This clean-room software project is proprietary and confidential.
+Unauthorized copying, transfer, decompilation, distribution, or public display
+of this software via any medium is strictly prohibited without explicit
+written authorization from Nexonic Technologies.
+"""
+
+
+def get_license_text(license_type: str) -> str:
+    """Return full legal text for the requested license type."""
+    norm = (license_type or "").strip().upper()
+    if "APACHE" in norm:
+        return APACHE_2_0_LICENSE
+    if "BSD" in norm:
+        return BSD_3_CLAUSE_LICENSE
+    if "PROPRIETARY" in norm:
+        return PROPRIETARY_LICENSE
+    return MIT_LICENSE
 
 
 def generate_specification(
@@ -16,7 +158,14 @@ def generate_specification(
     project_name: str,
     selected_features: list[dict | str] | None = None,
 ) -> str:
-    """Synthesize a comprehensive clean-room functional specification from analysis findings."""
+    """Synthesize a comprehensive clean-room functional specification from analysis findings.
+
+    Accurately distinguishes:
+    - [OBSERVED FACT - CONFIRMED]: Directly verified from binary structures and exports.
+    - [INFERRED BEHAVIOR - TENTATIVE]: Derived from disassembly and call graph heuristics.
+    - [UNVERIFIED DATA - REQUIRES VALIDATION]: Raw string indicators / endpoints.
+    - [UNKNOWN FUNCTIONALITY]: Boundaries where analysis was restricted or stripped.
+    """
     raw_findings = [r for r in (findings or []) if isinstance(r, dict)]
 
     lines: list[str] = [
@@ -31,72 +180,90 @@ def generate_specification(
         "> decompiled or disassembled code. Implementation must proceed solely from the interface",
         "> contracts, behavior requirements, and data formats described herein.",
         "",
-        "## 2. Target Platform & Architecture Requirements",
+        "## 2. Observed Binary Facts & Platform Constraints `[OBSERVED FACT - CONFIRMED]`",
     ]
 
     # Inspect binary headers & architecture
     header_find = next((r["value"] for r in raw_findings if r.get("key", "").endswith("header") and isinstance(r.get("value"), dict)), None)
     if header_find:
-        lines.append(f"- **Binary Format:** {header_find.get('format', 'Native executable')}")
-        lines.append(f"- **Target Architecture:** {header_find.get('arch', 'x86-64 / ARM64')} ({header_find.get('bits', 64)}-bit)")
-        lines.append(f"- **Endianness:** {header_find.get('endianness', 'Little-endian')}")
+        lines.append(f"- **Binary Format:** {header_find.get('format', 'Native executable')} `[CONFIRMED]`")
+        lines.append(f"- **Target Architecture:** {header_find.get('arch', 'x86-64 / ARM64')} ({header_find.get('bits', 64)}-bit) `[CONFIRMED]`")
+        lines.append(f"- **Endianness:** {header_find.get('endianness', 'Little-endian')} `[CONFIRMED]`")
         if header_find.get("subsystem"):
-            lines.append(f"- **Subsystem:** {header_find.get('subsystem')}")
+            lines.append(f"- **Subsystem:** {header_find.get('subsystem')} `[CONFIRMED]`")
         if header_find.get("minos"):
-            lines.append(f"- **Minimum OS Version:** {header_find.get('minos')}")
-        lines.append(f"- **Security Features:** PIE/ASLR={header_find.get('pie', False)}, NX/DEP={header_find.get('nx', True)}")
+            lines.append(f"- **Minimum OS Version:** {header_find.get('minos')} `[CONFIRMED]`")
+        lines.append(f"- **Security Mitigations:** PIE/ASLR={header_find.get('pie', False)}, NX/DEP={header_find.get('nx', True)} `[CONFIRMED]`")
     else:
-        lines.append("- **Platform Requirement:** Cross-platform (Windows x64 / macOS arm64 / Linux x64)")
+        lines.append("- **Platform Requirement:** Cross-platform (Windows x64 / macOS arm64 / Linux x64) `[ASSUMED]`")
 
-    # 3. External Interfaces & Dependencies
+    # 3. Verified External Interfaces & Dependencies
     lines.extend([
         "",
-        "## 3. External Interfaces & Dependencies",
+        "## 3. Verified External Interfaces & Shared Libraries `[OBSERVED FACT - CONFIRMED]`",
     ])
     deps = next((r["value"] for r in raw_findings if r.get("key", "").endswith("libraries") and isinstance(r.get("value"), list)), [])
     if deps:
-        lines.append("Required external shared libraries and runtime modules:")
+        lines.append("Observed dynamic shared libraries linked by target:")
         for d in deps[:30]:
-            lines.append(f"- `{d}`")
+            lines.append(f"- `{d}` `[OBSERVED LINK]`")
     else:
-        lines.append("- Standard system libraries and runtime modules.")
+        lines.append("- Standard system runtime libraries.")
 
-    # 4. Network Endpoints & Protocols
+    # 4. Inferred Behavioral Logic & Control Flow
     lines.extend([
         "",
-        "## 4. Network Communications & Endpoints",
+        "## 4. Inferred Behavioral Logic & Control Flow `[INFERRED BEHAVIOR - TENTATIVE]`",
+        "The following behavioral requirements are inferred from static control flow, call graphs, and",
+        "disassembly analysis. Implementers should fulfill these functional roles through clean-room design:",
+    ])
+    call_find = next((r["value"] for r in raw_findings if r.get("key") == "call_graph" and isinstance(r.get("value"), dict)), None)
+    if call_find and call_find.get("items"):
+        lines.append(f"- **Observed Call Edges:** {call_find.get('edges', len(call_find['items']))} inter-procedural call relations.")
+        lines.append("- **Key Flow Patterns:** Sequential initialization followed by modular dispatch.")
+    else:
+        lines.append("- **Component Flow:** Independent service initialization and event processing loop.")
+
+    # 5. Unverified Network Endpoints & Indicators
+    lines.extend([
+        "",
+        "## 5. Unverified Network Endpoints & Protocol Indicators `[UNVERIFIED DATA - REQUIRES VALIDATION]`",
+        "> **Notice:** The following strings were extracted from binary data sections. They have NOT been",
+        "> verified as active or authorized remote interfaces. Validate against staging infrastructure prior to integration.",
     ])
     endpoints = []
     for r in raw_findings:
         if r.get("kind") == "network" and isinstance(r.get("value"), list):
             endpoints.extend(r["value"])
     if endpoints:
-        lines.append("Identified network indicators and API communication endpoints:")
+        lines.append("Extracted network strings and candidate API endpoints:")
         for ep in sorted(set(endpoints))[:30]:
-            lines.append(f"- `{ep}`")
+            lines.append(f"- `{ep}` `[UNVERIFIED STRING]`")
     else:
-        lines.append("- Standalone local application; no external network communications required.")
+        lines.append("- Standalone local application; no external network communications confirmed.")
 
-    # 5. Indicators & Configuration Schema
-    lines.extend([
-        "",
-        "## 5. Configuration & Indicators Schema",
-    ])
     indicators = []
     for r in raw_findings:
         if r.get("kind") == "indicators" and isinstance(r.get("value"), list):
             indicators.extend(r["value"])
     if indicators:
-        lines.append("Discovered configuration parameters, indicator paths, and environment settings:")
+        lines.append("\nCandidate configuration strings and environment variables:")
         for ind in sorted(set(indicators))[:30]:
-            lines.append(f"- `{ind}`")
-    else:
-        lines.append("- Standard application configuration file or environment variables.")
+            lines.append(f"- `{ind}` `[UNVERIFIED STRING]`")
 
-    # 6. Functional Requirements & Features
+    # 6. Unknown Functionality & Analysis Boundaries
     lines.extend([
         "",
-        "## 6. Functional Requirements & Component Specifications",
+        "## 6. Unknown Functionality & Analysis Boundaries `[UNKNOWN FUNCTIONALITY]`",
+        "- **Stripped Debug Metadata:** Local variable names and non-exported type definitions are absent in release binaries.",
+        "- **Dynamic Dispatch:** Computed jumps and indirect calls are not resolved statically; clean-room interfaces must define explicit contracts.",
+        "- **Security Constraint:** Original binaries are never executed dynamically on host. Unknown behavior is modeled safely via isolated fixtures.",
+    ])
+
+    # 7. Functional Requirements & Components
+    lines.extend([
+        "",
+        "## 7. Clean-Room Architectural Components",
     ])
     feats: list[dict] = []
     if selected_features:
@@ -113,17 +280,17 @@ def generate_specification(
             {"name": "Command-Line & Runtime Interface", "category": "User Interface"},
         ]
     for idx, f in enumerate(feats, 1):
-        lines.append(f"### 6.{idx} {f['name']}")
+        lines.append(f"### 7.{idx} {f['name']}")
         lines.append(f"- **Category:** {f.get('category', 'Functional Module')}")
-        lines.append("- **Requirement:** Implement clean-room module fulfilling interface contracts and behavioral requirements independently.")
+        lines.append("- **Clean-Room Requirement:** Implement independent module fulfilling interface contracts without proprietary dependencies.")
 
-    # 7. Quality Assurance & Verification Plan
+    # 8. Quality Assurance & Verification Plan
     lines.extend([
         "",
-        "## 7. Verification & Test Plan",
-        "- **Unit Testing:** 100% coverage of core data models, configuration loaders, and serializers.",
-        "- **Integration Testing:** Live verification of client status, interface responses, and protocol parsers.",
-        "- **Sandboxed Execution:** Zero execution of untrusted or proprietary original binaries.",
+        "## 8. Quality Assurance & Verification Plan",
+        "- **Unit Testing:** 100% test coverage of core data models, configuration loaders, and serializers.",
+        "- **Evidence-Based Behavioral Tests:** Automated test suite verifying contract integrity and mocked responses.",
+        "- **Sandboxed Execution:** Zero host execution of untrusted or original binaries.",
     ])
 
     return "\n".join(lines)
@@ -147,8 +314,18 @@ def scaffold_project(
     files["SPECIFICATION.md"] = full_spec
     files["CLEAN_ROOM_NOTICE.md"] = CLEAN_ROOM_NOTICE
 
-    # License
-    files["LICENSE"] = f"{license_type} License\n\nCopyright (c) 2026. All rights reserved.\n"
+    # License: full legal license template
+    files["LICENSE"] = get_license_text(license_type)
+
+    safe_name = project_name.lower().replace("-", "_").replace(" ", "_")
+
+    # Generate evidence-based behavioral tests
+    evidence_tests = generate_evidence_tests(
+        stack=stack,
+        project_name=project_name,
+        features=features,
+    )
+    files.update(evidence_tests)
 
     safe_name = project_name.lower().replace("-", "_").replace(" ", "_")
 
@@ -378,17 +555,37 @@ serde_json = "1.0"
         files["main_test.go"] = f'package main\n\nimport (\n\t"testing"\n\t"{safe_name}/client"\n)\n\nfunc TestClientStatus(t *testing.T) {{\n\tc := client.NewClient("http://localhost:8080")\n\tif c.Status() != "ok" {{\n\t\tt.Fail()\n\t}}\n}}\n'
 
     else:
-        files[f"{safe_name}.csproj"] = """<Project Sdk="Microsoft.NET.Sdk">
+        files[f"{safe_name}.csproj"] = f"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageLicenseExpression>{license_type}</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
 """
-        files["Program.cs"] = f'Console.WriteLine("Starting {project_name} clean-room project");\n'
-        files["README.md"] = f"# {project_name}\n\nIndependent C# reimplementation.\n"
+        files["README.md"] = f"# {project_name}\n\nIndependent C# / .NET clean-room reimplementation.\n\n## Build & Test\n```bash\ndotnet build\ndotnet test\n```\n"
+        files["src/Models.cs"] = f"""namespace {safe_name.capitalize().replace("_", "")}.Models;
+
+public record ConfigModel(string Name, bool Enabled);
+"""
+        files["src/Client.cs"] = f"""namespace {safe_name.capitalize().replace("_", "")}.Client;
+
+public class ServiceClient
+{{
+    public string BaseUrl {{ get; }}
+    public ServiceClient(string baseUrl = "http://127.0.0.1:8080") => BaseUrl = baseUrl;
+    public string GetStatus() => "ok";
+}}
+"""
+        files["src/Program.cs"] = f"""using System;
+using {safe_name.capitalize().replace("_", "")}.Client;
+
+Console.WriteLine("Starting clean-room {project_name}");
+var client = new ServiceClient();
+Console.WriteLine($"Service status: {{client.GetStatus()}}");
+"""
 
     # Write files to dest_dir
     for rel_path, content in files.items():

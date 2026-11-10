@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from ...analysis.diffing import BinaryDiffEngine, DiffResult, FunctionDiffItem
 from ..highlighter import CodeHighlighter
 from .common import Page
 
@@ -38,6 +39,11 @@ class ApplicationExplorerPage(Page):
     def __init__(self, ctx):
         super().__init__(ctx)
         self.current_pid: int | None = None
+        self.current_diff_result: DiffResult | None = None
+        self.filtered_diff_items: list[FunctionDiffItem] = []
+        self.current_pseudo_code: str = ""
+        self.current_asm_code: str = ""
+        self.current_xrefs_code: str = ""
 
         # Top bar: project selection, tech badges, search
         top = QHBoxLayout()
@@ -100,6 +106,80 @@ class ApplicationExplorerPage(Page):
         self.tree_calls.currentItemChanged.connect(self._on_call_selected)
         self.tabs.addTab(self.tree_calls, "Call Graph")
 
+        # Tab 6: Binary Diff
+        diff_w = QFrame()
+        diff_lay = QVBoxLayout(diff_w)
+        diff_lay.setContentsMargins(6, 6, 6, 6)
+        diff_lay.setSpacing(6)
+
+        top_diff = QHBoxLayout()
+        top_diff.addWidget(QLabel("Compare Target A with:"))
+        self.diff_proj_sel = QComboBox()
+        top_diff.addWidget(self.diff_proj_sel, 1)
+
+        self.btn_run_diff = QPushButton("Run Binary Diff")
+        self.btn_run_diff.clicked.connect(self._on_run_binary_diff)
+        top_diff.addWidget(self.btn_run_diff)
+
+        self.btn_export_diff = QPushButton("Export Report…")
+        self.btn_export_diff.clicked.connect(self._export_diff_report)
+        top_diff.addWidget(self.btn_export_diff)
+        diff_lay.addLayout(top_diff)
+
+        self.lbl_diff_summary = QLabel("Select another project above and click 'Run Binary Diff'.")
+        self.lbl_diff_summary.setStyleSheet("font-weight: 600; padding: 4px; background-color: #2b3a4a; border-radius: 4px;")
+        diff_lay.addWidget(self.lbl_diff_summary)
+
+        filt_lay = QHBoxLayout()
+        filt_lay.addWidget(QLabel("Filter:"))
+        self.diff_filter = QComboBox()
+        self.diff_filter.addItems(["All Functions", "Modified Only", "Added Only", "Removed Only", "Identical Only"])
+        self.diff_filter.currentIndexChanged.connect(self._apply_diff_filter)
+        filt_lay.addWidget(self.diff_filter, 1)
+        diff_lay.addLayout(filt_lay)
+
+        self.diff_table = QTableWidget(0, 5)
+        self.diff_table.setHorizontalHeaderLabels(["Function", "Target A Addr", "Target B Addr", "Status", "Similarity"])
+        self.diff_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.diff_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.diff_table.currentItemChanged.connect(self._on_diff_item_selected)
+        diff_lay.addWidget(self.diff_table, 2)
+
+        side_split = QSplitter(Qt.Horizontal)
+
+        left_side = QFrame()
+        left_lay = QVBoxLayout(left_side)
+        left_lay.setContentsMargins(0, 0, 0, 0)
+        self.lbl_diff_a = QLabel("Target A (Active Project)")
+        self.lbl_diff_a.setStyleSheet("font-weight: bold;")
+        left_lay.addWidget(self.lbl_diff_a)
+        self.diff_edit_a = QPlainTextEdit()
+        self.diff_edit_a.setReadOnly(True)
+        self.diff_edit_a.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+        self.diff_highlighter_a = CodeHighlighter(self.diff_edit_a.document(), theme=self.ctx.theme)
+        left_lay.addWidget(self.diff_edit_a)
+        side_split.addWidget(left_side)
+
+        right_side = QFrame()
+        right_lay = QVBoxLayout(right_side)
+        right_lay.setContentsMargins(0, 0, 0, 0)
+        self.lbl_diff_b = QLabel("Target B (Comparison Target)")
+        self.lbl_diff_b.setStyleSheet("font-weight: bold;")
+        right_lay.addWidget(self.lbl_diff_b)
+        self.diff_edit_b = QPlainTextEdit()
+        self.diff_edit_b.setReadOnly(True)
+        self.diff_edit_b.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+        self.diff_highlighter_b = CodeHighlighter(self.diff_edit_b.document(), theme=self.ctx.theme)
+        right_lay.addWidget(self.diff_edit_b)
+        side_split.addWidget(right_side)
+
+        # Synchronized vertical scrolling
+        self.diff_edit_a.verticalScrollBar().valueChanged.connect(self.diff_edit_b.verticalScrollBar().setValue)
+        self.diff_edit_b.verticalScrollBar().valueChanged.connect(self.diff_edit_a.verticalScrollBar().setValue)
+
+        diff_lay.addWidget(side_split, 3)
+        self.tabs.addTab(diff_w, "Binary Diff")
+
         split.addWidget(self.tabs)
 
         # Right panel: Code / Detail Inspector
@@ -139,6 +219,15 @@ class ApplicationExplorerPage(Page):
         code_lay.setSpacing(4)
 
         code_bar = QHBoxLayout()
+        self.btn_view_pseudo = QPushButton("Pseudocode")
+        self.btn_view_pseudo.clicked.connect(lambda: self._switch_code_view("pseudocode"))
+        self.btn_view_asm = QPushButton("Assembly")
+        self.btn_view_asm.clicked.connect(lambda: self._switch_code_view("assembly"))
+        self.btn_view_xrefs = QPushButton("Callers / Callees")
+        self.btn_view_xrefs.clicked.connect(lambda: self._switch_code_view("xrefs"))
+        code_bar.addWidget(self.btn_view_pseudo)
+        code_bar.addWidget(self.btn_view_asm)
+        code_bar.addWidget(self.btn_view_xrefs)
         code_bar.addStretch(1)
         btn_copy = QPushButton("Copy Code")
         btn_copy.clicked.connect(self._copy_code)
@@ -185,6 +274,11 @@ class ApplicationExplorerPage(Page):
             elif not select and cur_data and p["id"] == cur_data:
                 target_idx = i
         self.proj_sel.blockSignals(False)
+        self.diff_proj_sel.blockSignals(True)
+        self.diff_proj_sel.clear()
+        for p in projs:
+            self.diff_proj_sel.addItem(f"#{p['id']} · {p['name']}", p["id"])
+        self.diff_proj_sel.blockSignals(False)
         if projs:
             self.proj_sel.setCurrentIndex(target_idx)
             self._load_project(self.proj_sel.currentData())
@@ -459,9 +553,14 @@ class ApplicationExplorerPage(Page):
         text = ""
         lang = "generic"
 
+        self.current_pseudo_code = ""
+        self.current_asm_code = ""
+        self.current_xrefs_code = ""
+
         if isinstance(val, dict):
             if "code" in val:
                 text = val["code"]
+                self.current_pseudo_code = text
                 if key.endswith((".java", "jadx")):
                     lang = "java"
                 elif key.endswith((".cs", "ilspy")):
@@ -470,20 +569,44 @@ class ApplicationExplorerPage(Page):
                     lang = "python"
                 elif key.endswith(".js"):
                     lang = "javascript"
+                else:
+                    lang = "c"
+            elif "lines" in val and isinstance(val["lines"], list):
+                text = "\n".join(val["lines"])
+                self.current_asm_code = text
+                lang = "asm"
             elif "asm" in val or "instructions" in val:
                 insts = val.get("instructions") or val.get("asm")
                 text = "\n".join(f"{i.get('addr', ''):<16} {i.get('mnemonic', ''):<8} {i.get('op_str', '')}" for i in insts) if isinstance(insts, list) else str(insts)
-                lang = "generic"
+                self.current_asm_code = text
+                lang = "asm"
             elif "xml" in val:
                 text = val["xml"]
                 lang = "xml"
             else:
                 text = json.dumps(val, indent=2)
                 lang = "json"
+
+            callers = val.get("callers", [])
+            callees = val.get("callees", [])
+            if callers or callees:
+                self.current_xrefs_code = (
+                    f"/* Function Cross-Reference Mapping: {key} */\n"
+                    + f"// Callers ({len(callers)}):\n"
+                    + "\n".join(f"  <- {c}" for c in callers)
+                    + f"\n\n// Callees ({len(callees)}):\n"
+                    + "\n".join(f"  -> {c}" for c in callees)
+                    + "\n"
+                )
         elif isinstance(val, list):
             text = "\n".join(str(x) for x in val)
         else:
             text = str(val)
+
+        if not self.current_pseudo_code:
+            self.current_pseudo_code = text
+        if not self.current_asm_code and lang == "asm":
+            self.current_asm_code = text
 
         self.highlighter.set_language(lang)
         self.code_edit.setPlainText(text)
@@ -499,6 +622,100 @@ class ApplicationExplorerPage(Page):
             "Evidence": r.get("evidence"),
         }
         self._set_props(props)
+
+    def _switch_code_view(self, mode: str):
+        if mode == "assembly" and self.current_asm_code:
+            self.highlighter.set_language("asm")
+            self.code_edit.setPlainText(self.current_asm_code)
+        elif mode == "xrefs" and self.current_xrefs_code:
+            self.highlighter.set_language("c")
+            self.code_edit.setPlainText(self.current_xrefs_code)
+        else:
+            self.highlighter.set_language("c")
+            self.code_edit.setPlainText(self.current_pseudo_code or self.code_edit.toPlainText())
+
+    def _on_run_binary_diff(self):
+        if not self.current_pid:
+            self.ctx.status("No active project loaded for comparison.")
+            return
+        target_b_pid = self.diff_proj_sel.currentData()
+        if not target_b_pid or target_b_pid == self.current_pid:
+            self.ctx.status("Select a different target project for comparison.")
+            return
+
+        proj_a = self.ctx.db.project(self.current_pid)
+        proj_b = self.ctx.db.project(target_b_pid)
+        findings_a = self.ctx.db.findings(self.current_pid)
+        findings_b = self.ctx.db.findings(target_b_pid)
+
+        diff = BinaryDiffEngine.compare_findings(
+            findings_a=findings_a,
+            findings_b=findings_b,
+            name_a=proj_a.get("name", f"Project #{self.current_pid}"),
+            name_b=proj_b.get("name", f"Project #{target_b_pid}"),
+        )
+        self.current_diff_result = diff
+
+        summary_text = (
+            f"Overall Similarity: {diff.overall_similarity * 100:.1f}% | "
+            f"Identical: {diff.summary.get('identical', 0)} | "
+            f"Modified: {diff.summary.get('modified', 0)} | "
+            f"Added (+): {diff.summary.get('added', 0)} | "
+            f"Removed (-): {diff.summary.get('removed', 0)}"
+        )
+        self.lbl_diff_summary.setText(summary_text)
+        self._apply_diff_filter()
+
+    def _apply_diff_filter(self):
+        if not getattr(self, "current_diff_result", None):
+            return
+        filt = self.diff_filter.currentText()
+        items = self.current_diff_result.functions
+
+        if filt == "Modified Only":
+            items = [f for f in items if f.status == "modified"]
+        elif filt == "Added Only":
+            items = [f for f in items if f.status == "added"]
+        elif filt == "Removed Only":
+            items = [f for f in items if f.status == "removed"]
+        elif filt == "Identical Only":
+            items = [f for f in items if f.status == "identical"]
+
+        self.filtered_diff_items = items
+        self.diff_table.setRowCount(len(items))
+
+        for row, item in enumerate(items):
+            self.diff_table.setItem(row, 0, QTableWidgetItem(item.name))
+            self.diff_table.setItem(row, 1, QTableWidgetItem(item.address_a or "—"))
+            self.diff_table.setItem(row, 2, QTableWidgetItem(item.address_b or "—"))
+            self.diff_table.setItem(row, 3, QTableWidgetItem(item.status.upper()))
+            self.diff_table.setItem(row, 4, QTableWidgetItem(f"{item.similarity * 100:.1f}%"))
+
+    def _on_diff_item_selected(self, cur: QTableWidgetItem, _prev):
+        if not cur or not getattr(self, "current_diff_result", None):
+            return
+        row = cur.row()
+        filtered = getattr(self, "filtered_diff_items", [])
+        if 0 <= row < len(filtered):
+            item = filtered[row]
+            code_a = item.pseudocode_a or ("\n".join(item.assembly_a) if item.assembly_a else "// [NOT PRESENT IN TARGET A]")
+            code_b = item.pseudocode_b or ("\n".join(item.assembly_b) if item.assembly_b else "// [NOT PRESENT IN TARGET B]")
+
+            self.diff_highlighter_a.set_language("c" if item.pseudocode_a else "asm")
+            self.diff_highlighter_b.set_language("c" if item.pseudocode_b else "asm")
+            self.diff_edit_a.setPlainText(code_a)
+            self.diff_edit_b.setPlainText(code_b)
+
+    def _export_diff_report(self):
+        if not getattr(self, "current_diff_result", None):
+            self.ctx.status("Run a binary diff first before exporting.")
+            return
+        filename, _ = QFileDialog.getSaveFileName(self, "Export Binary Diff Report", "binary_diff_report.md", "Markdown (*.md);;JSON (*.json)")
+        if filename:
+            fmt = "json" if filename.endswith(".json") else "markdown"
+            report_text = BinaryDiffEngine.generate_diff_report(self.current_diff_result, format=fmt)
+            Path(filename).write_text(report_text, encoding="utf-8")
+            self.ctx.status(f"Exported binary diff report to {filename}")
 
     def _set_props(self, props: dict):
         self.prop_table.setRowCount(len(props))
