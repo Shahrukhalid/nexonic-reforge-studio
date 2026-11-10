@@ -3,14 +3,21 @@ from __future__ import annotations
 
 import re
 
-from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
+from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextDocument
 
 
 class CodeHighlighter(QSyntaxHighlighter):
     """Multi-language regex-based syntax highlighter supporting dark and light themes."""
 
     def __init__(self, parent=None, lang: str = "generic", theme: str = "dark"):
-        super().__init__(parent)
+        if hasattr(parent, "document"):
+            super().__init__(parent)
+            self.setDocument(parent.document())
+        elif isinstance(parent, QTextDocument) and parent.parent():
+            super().__init__(parent.parent())
+            self.setDocument(parent)
+        else:
+            super().__init__(parent)
         self.lang = lang.lower()
         self.theme = theme
         self.rules: list[tuple[re.Pattern, QTextCharFormat]] = []

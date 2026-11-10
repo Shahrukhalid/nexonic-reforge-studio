@@ -36,7 +36,6 @@ reforge = ["tools/registry.json", "tools/packs.json", "tools/ghidra_scripts/*.ja
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 qt_api = "pyside6"
-addopts = "--capture=sys"
 
 [tool.ruff]
 line-length = 110

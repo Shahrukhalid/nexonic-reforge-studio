@@ -156,7 +156,7 @@ class ApplicationExplorerPage(Page):
         self.diff_edit_a = QPlainTextEdit()
         self.diff_edit_a.setReadOnly(True)
         self.diff_edit_a.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
-        self.diff_highlighter_a = CodeHighlighter(self.diff_edit_a.document(), theme=self.ctx.theme)
+        self.diff_highlighter_a = CodeHighlighter(self.diff_edit_a, theme=self.ctx.theme)
         left_lay.addWidget(self.diff_edit_a)
         side_split.addWidget(left_side)
 
@@ -169,13 +169,13 @@ class ApplicationExplorerPage(Page):
         self.diff_edit_b = QPlainTextEdit()
         self.diff_edit_b.setReadOnly(True)
         self.diff_edit_b.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
-        self.diff_highlighter_b = CodeHighlighter(self.diff_edit_b.document(), theme=self.ctx.theme)
+        self.diff_highlighter_b = CodeHighlighter(self.diff_edit_b, theme=self.ctx.theme)
         right_lay.addWidget(self.diff_edit_b)
         side_split.addWidget(right_side)
 
         # Synchronized vertical scrolling
-        self.diff_edit_a.verticalScrollBar().valueChanged.connect(self.diff_edit_b.verticalScrollBar().setValue)
-        self.diff_edit_b.verticalScrollBar().valueChanged.connect(self.diff_edit_a.verticalScrollBar().setValue)
+        self.diff_edit_a.verticalScrollBar().valueChanged.connect(self._sync_scroll_b)
+        self.diff_edit_b.verticalScrollBar().valueChanged.connect(self._sync_scroll_a)
 
         diff_lay.addWidget(side_split, 3)
         self.tabs.addTab(diff_w, "Binary Diff")
@@ -241,7 +241,7 @@ class ApplicationExplorerPage(Page):
         self.code_edit.setReadOnly(True)
         self.code_edit.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
         self.code_edit.setLineWrapMode(QPlainTextEdit.NoWrap)
-        self.highlighter = CodeHighlighter(self.code_edit.document(), theme=self.ctx.theme)
+        self.highlighter = CodeHighlighter(self.code_edit, theme=self.ctx.theme)
         code_lay.addWidget(self.code_edit)
 
         self.view_tabs.addTab(code_w, "Code / Disassembly")
@@ -690,6 +690,18 @@ class ApplicationExplorerPage(Page):
             self.diff_table.setItem(row, 2, QTableWidgetItem(item.address_b or "—"))
             self.diff_table.setItem(row, 3, QTableWidgetItem(item.status.upper()))
             self.diff_table.setItem(row, 4, QTableWidgetItem(f"{item.similarity * 100:.1f}%"))
+
+    def _sync_scroll_b(self, val: int):
+        if hasattr(self, "diff_edit_b") and not self.diff_edit_b.isHidden():
+            sb = self.diff_edit_b.verticalScrollBar()
+            if sb.value() != val:
+                sb.setValue(val)
+
+    def _sync_scroll_a(self, val: int):
+        if hasattr(self, "diff_edit_a") and not self.diff_edit_a.isHidden():
+            sb = self.diff_edit_a.verticalScrollBar()
+            if sb.value() != val:
+                sb.setValue(val)
 
     def _on_diff_item_selected(self, cur: QTableWidgetItem, _prev):
         if not cur or not getattr(self, "current_diff_result", None):
