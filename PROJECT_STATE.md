@@ -1,15 +1,26 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-10 · v0.5.1 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-10 · v0.5.2-dev · Publisher: Nexonic Technologies_
 
-## Current milestone
-**v0.5.1 — CI Runner Restoration, Cache Enum Deserialization Repair, Scaffold Test Isolation, and Release Pipeline Hardening.**
-- macOS Intel Runner: Restored supported `macos-15-intel` runner label across CI, release, and nightly pipelines.
-- Cache Engine Enum Deserialization: Fixed `AttributeError: 'str' object has no attribute 'value'` via `Finding.__post_init__`, `Finding.from_dict`, and `AnalysisCache.get_findings`.
-- Reconstruction Studio: Standardized Python clean-room scaffold to standard library dependencies (`dataclasses`, `urllib.request`) and injected `pythonpath=src` into `pytest` execution, verified with `test_run_project_tests_live`.
-- Rizin Integration: Robust JSON preamble handling and broadened key validation (`info`, `bin`, `core`, `bintype`).
-- Release Safety: Strict pre-release gate enforcing verified passing checks on the exact commit before installer compilation.
-- Prior Status: `v0.5.0` tag marked unreleased due to CI runner label deprecation and enum deserialization defects discovered during release validation. Superseded by `v0.5.1`.
+## Published Releases
+- **v0.5.1 (Published 2026-11-10T05:47:12Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.5.1
+  - Release Commit: `6fa5595` (merged via PR #11)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,754,838 bytes / 37.91 MB)
+      SHA-256: `e1159427795d0cc0f2286d5c86d7c562ca87a64994e0da032f8af81974968bbf`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (50,008,011 bytes / 47.69 MB)
+      SHA-256: `4146fcad1c24930328682cc98e67fee1b3e32d47507887eabafb07709c7acd30`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,549,742 bytes / 52.02 MB)
+      SHA-256: `e9164eac7f817311a3ebf5f86e9908a9fdc2a6bfb10dcb4f7868886078814508`
+    - `SHA256SUMS.txt` (112 bytes)
+
+## Current Milestone: v0.5.2
+**v0.5.2 — Automation Hardening, Checksum Aggregation, Auto-Merge Race Resolution, and Branch Protection Enforcement.**
+- Release Checksum Aggregation: Solved artifact overwriting during download by naming per-platform manifests (`dist/SHA256SUMS-${{ matrix.label }}.txt`), aggregating all entries into a unified `SHA256SUMS.txt`, verifying that all 3 installer hashes exist and match disk files, and failing release if any are missing.
+- Auto-Merge Race Condition: Made auto-merge idempotent with concurrency grouping (`auto-merge-${{ github.event.pull_request.number }}` with `cancel-in-progress: true`) and graceful error handling on duplicate triggers.
+- Branch Protection: Enforced all 7 required CI checks (`test (ubuntu-24.04)`, `test (macos-15)`, `test (macos-15-intel)`, `test (windows-2022)`, `audit`, `integration`, `integration-macos`) on `main` via GitHub branch protection rules.
+- Autopilot Controller: Added `check-ci` and `tag` subcommands with automated PR-to-squash commit check resolution.
 
 ## Completed (code exists + tests pass)
 - Architecture: PySide6/Qt GUI + Python core, SQLite storage, thread-pool background task runner, PyInstaller packaging.
@@ -26,5 +37,5 @@ _Last updated: 2026-11-10 · v0.5.1 · Publisher: Nexonic Technologies_
 - `pytest`: All passing (100% pass rate).
 
 ## Verification & Release Status
-- v0.5.1 prepared for PR merge and release tagging after CI passes.
-- Windows Inno Setup & macOS DMG packaging validated.
+- v0.5.1 published and verified live on GitHub Releases.
+- v0.5.2 automation hardening PR undergoing CI validation.
