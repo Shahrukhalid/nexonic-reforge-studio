@@ -24,13 +24,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon0 libgl1 radare2 wabt
       - run: pip install -e ".[dev]"
       - run: ruff check src tests scripts
-      - name: Run pytest (Windows)
-        if: runner.os == 'Windows'
+      - name: Run pytest
         run: pytest -q --capture=sys
-        env: { QT_QPA_PLATFORM: offscreen }
-      - name: Run pytest (Unix)
-        if: runner.os != 'Windows'
-        run: pytest -q
         env: { QT_QPA_PLATFORM: offscreen }
       - name: Registry consistency
         run: python scripts/build_registry.py && git diff --exit-code src/reforge/tools/registry.json || echo "::warning::registry.json differs from catalog (verification data present)"

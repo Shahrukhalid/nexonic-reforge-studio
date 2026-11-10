@@ -21,6 +21,23 @@ def reforge_home(tmp_path, monkeypatch):
     return tmp_path / "home"
 
 
+@pytest.fixture(autouse=True)
+def cleanup_qt():
+    yield
+    try:
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            for w in list(app.topLevelWidgets()):
+                try:
+                    w.close()
+                    w.deleteLater()
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 @pytest.fixture
 def db(reforge_home):
     from reforge.core.db import Database

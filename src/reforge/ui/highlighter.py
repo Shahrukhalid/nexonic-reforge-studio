@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextDocument
+from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
 
 class CodeHighlighter(QSyntaxHighlighter):
@@ -13,9 +13,6 @@ class CodeHighlighter(QSyntaxHighlighter):
         if hasattr(parent, "document"):
             super().__init__(parent)
             self.setDocument(parent.document())
-        elif isinstance(parent, QTextDocument) and parent.parent():
-            super().__init__(parent.parent())
-            self.setDocument(parent)
         else:
             super().__init__(parent)
         self.lang = lang.lower()
