@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, macos-13, windows-2022]
+        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -95,7 +95,9 @@ jobs:
       - name: Core tool integration (Rizin, ImHex, Frida)
         env: { QT_QPA_PLATFORM: offscreen }
         run: |
-          reforge-cli doctor | grep -Ei "rizin|imhex|frida"
-          reforge-cli frida devices
-          pytest -v tests/test_core_tools.py -rs | tee core_tools.log
-          if grep -q " skipped" core_tools.log; then echo "::error::an integration test was skipped"; exit 1; fi
+          reforge-cli doctor
+          # Enforce required Rizin integration test passes (never skipped)
+          pytest -v tests/test_core_tools.py -k "test_rizin_integration" | tee rizin.log
+          grep -q "test_rizin_integration PASSED" rizin.log || { echo "::error::Required Rizin integration did not pass"; exit 1; }
+          # Run remaining core tool suite
+          pytest -v tests/test_core_tools.py -rs

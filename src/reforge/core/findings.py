@@ -39,6 +39,35 @@ class Finding:
     subject: str = ""                  # relative path of the analysed file
     extra: dict = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if isinstance(self.confidence, str) and not isinstance(self.confidence, Confidence):
+            try:
+                self.confidence = Confidence(self.confidence)
+            except ValueError:
+                self.confidence = Confidence.UNKNOWN
+        if isinstance(self.provenance, str) and not isinstance(self.provenance, Provenance):
+            try:
+                self.provenance = Provenance(self.provenance)
+            except ValueError:
+                self.provenance = Provenance.PARSED
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Finding:
+        d = dict(data)
+        conf = d.get("confidence")
+        if isinstance(conf, str):
+            try:
+                d["confidence"] = Confidence(conf)
+            except ValueError:
+                d["confidence"] = Confidence.UNKNOWN
+        prov = d.get("provenance")
+        if isinstance(prov, str):
+            try:
+                d["provenance"] = Provenance(prov)
+            except ValueError:
+                d["provenance"] = Provenance.PARSED
+        return cls(**d)
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d["confidence"] = self.confidence.value

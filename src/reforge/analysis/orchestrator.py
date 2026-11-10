@@ -208,9 +208,9 @@ class Orchestrator:
                 ctx.progress(base, f"{a.tool}: {rel}")
                 t = time.time()
                 file_hash = file_sha256
-                cached = self.cache.get(file_hash, a.tool, "tools")
-                if cached:
-                    fs = [Finding(**f) for f in cached]
+                cached_findings = self.cache.get_findings(file_hash, a.tool, "tools")
+                if cached_findings is not None:
+                    fs = cached_findings
                     status = "ok"
                     res = None
                 else:
@@ -219,7 +219,7 @@ class Orchestrator:
                         self.cache.put(file_hash, a.tool, "tools", fs)
                 tools_run[status] += 1
                 self._rec(pid, fs)
-                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached else "(not installed)"), t, status,
+                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached_findings else "(not installed)"), t, status,
                                      res.stderr[-500:] if res and not res.ok else "")
 
         # container-level engines (decompile the whole package, e.g. JADX on an APK)
@@ -229,9 +229,9 @@ class Orchestrator:
                 ctx.progress(90, f"{a.tool}: {src.name}")
                 t = time.time()
                 file_hash = file_sha256
-                cached = self.cache.get(file_hash, a.tool, "container")
-                if cached:
-                    fs = [Finding(**f) for f in cached]
+                cached_findings = self.cache.get_findings(file_hash, a.tool, "container")
+                if cached_findings is not None:
+                    fs = cached_findings
                     status = "ok"
                     res = None
                 else:
@@ -240,7 +240,7 @@ class Orchestrator:
                         self.cache.put(file_hash, a.tool, "container", fs)
                 tools_run[status] += 1
                 self._rec(pid, fs)
-                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached else "(not installed)"), t, status,
+                self.db.log_tool_run(pid, a.tool, " ".join(res.argv) if res else ("(cached)" if cached_findings else "(not installed)"), t, status,
                                      res.stderr[-500:] if res and not res.ok else "")
 
         ctx.progress(95, "Summarising")

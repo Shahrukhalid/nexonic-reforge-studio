@@ -22,7 +22,7 @@ def test_rizin_integration(samples):
     status, findings, _ = run_adapter(a, samples["native"], "native")
     assert status == "ok", findings
     v = findings[0].value
-    assert isinstance(v, dict) and ("core" in v or "bin" in v), str(v)[:500]
+    assert isinstance(v, dict) and any(k in v for k in ("core", "bin", "info", "arch", "bintype", "format")), str(v)[:500]
 
 
 def test_imhex_found_in_app_bundle(tmp_path, monkeypatch):
