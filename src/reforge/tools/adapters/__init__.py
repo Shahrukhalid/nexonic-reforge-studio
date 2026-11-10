@@ -54,6 +54,14 @@ def _capa(res: ToolResult, rel: str) -> list[Finding]:
 
 EXECUTABLES = {"elf", "pe", "macho", "macho-fat", "appimage"}
 
+
+def rizin_argv(exe: str, target: Path) -> list[str]:
+    """rz-bin takes -Ij directly; the rizin shell needs a quiet one-shot `ij` command."""
+    if exe.replace("\\", "/").rsplit("/", 1)[-1].lower().startswith("rz-bin"):
+        return [exe, "-Ij", str(target)]
+    return [exe, "-q", "-c", "ij", str(target)]
+
+
 ADAPTERS: list[Adapter] = [
     Adapter("Detect It Easy", EXECUTABLES | {"apk", "jar", "dex", "msi", "zip"}, {"quick", "standard", "deep"},
             lambda exe, t: [exe, "-j", str(t)], lambda r, rel: _json_or_text(r, "diec", "die_scan", rel), 120),
@@ -61,7 +69,7 @@ ADAPTERS: list[Adapter] = [
             lambda exe, t: [exe, "-Ij", str(t)] if exe.endswith(("rabin2", "rabin2.exe")) else
             [exe, "-q", "-c", "ij", str(t)], lambda r, rel: _json_or_text(r, "radare2", "rabin2_info", rel), 120),
     Adapter("Rizin", EXECUTABLES | {"dex", "wasm"}, {"deep"},
-            lambda exe, t: [exe, "-Ij", str(t)], lambda r, rel: _json_or_text(r, "rizin", "rz_bin_info", rel), 120),
+            lambda exe, t: rizin_argv(exe, t), lambda r, rel: _json_or_text(r, "rizin", "rz_bin_info", rel), 120),
     Adapter("WABT", {"wasm"}, {"standard", "deep"},
             lambda exe, t: [exe, "-x", str(t)] if "objdump" in exe else [exe, str(t)],
             lambda r, rel: _json_or_text(r, "wabt", "wasm_details", rel), 120),

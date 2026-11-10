@@ -20,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 analysis = ["yara-x>=0.10"]
+dynamic = ["frida==17.26.1"]  # device discovery only; instrumentation stays disabled
 dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6", "pyinstaller>=6.10"]
 
 [project.scripts]

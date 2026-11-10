@@ -94,10 +94,19 @@ def test_secrets_redacted(tmp_path):
 
 
 def test_run_tool_timeout_and_no_shell():
-    r = run_tool(["sleep", "5"], timeout=1)
+    import sys
+    r = run_tool([sys.executable, "-c", "import time; time.sleep(5)"], timeout=1)
     assert r.timed_out and not r.ok
-    r = run_tool(["echo", "$(id)"])
+    r = run_tool([sys.executable, "-c", "import sys; print(sys.argv[1])", "$(id)"])
     assert r.stdout.strip() == "$(id)"
+
+
+def test_run_tool_bounded_output():
+    import sys
+    r = run_tool([sys.executable, "-c", "import sys; sys.stdout.write('A' * 20000); sys.stdout.flush()"],
+                 max_output=1024)
+    assert r.truncated
+    assert len(r.stdout) <= 1024
 
 
 def test_registry_complete():
