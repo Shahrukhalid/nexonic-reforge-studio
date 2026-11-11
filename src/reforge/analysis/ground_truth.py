@@ -106,21 +106,23 @@ class GroundTruthEvaluator:
                 recovered_func_names.add(key.split("export:", 1)[1])
             elif "function:" in key:
                 recovered_func_names.add(key.split("function:", 1)[1])
-            elif key in ("recovered_functions", "dotnet_methods", "java_methods", "functions") or kind == "function":
+            elif "functions" in key or "methods" in key or kind in ("function", "exports"):
                 if isinstance(val, list):
                     for fn_item in val:
                         if isinstance(fn_item, str):
                             recovered_func_names.add(fn_item)
                         elif isinstance(fn_item, dict) and "name" in fn_item:
                             recovered_func_names.add(fn_item["name"])
+                elif isinstance(val, dict):
+                    if "name" in val:
+                        recovered_func_names.add(val["name"])
+                    for fn_item in val.get("items", []):
+                        if isinstance(fn_item, str):
+                            recovered_func_names.add(fn_item)
+                        elif isinstance(fn_item, dict) and "name" in fn_item:
+                            recovered_func_names.add(fn_item["name"])
                 elif isinstance(val, str):
                     recovered_func_names.add(val)
-                elif isinstance(val, dict) and "name" in val:
-                    recovered_func_names.add(val["name"])
-            if isinstance(val, dict) and "functions" in key:
-                for fn_item in val.get("items", []):
-                    if isinstance(fn_item, dict) and "name" in fn_item:
-                        recovered_func_names.add(fn_item["name"])
 
         # 2. Recovered strings
         recovered_strings = set()

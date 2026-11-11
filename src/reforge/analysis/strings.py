@@ -50,7 +50,10 @@ def analyze(path: Path, rel: str = "") -> list[Finding]:
             # never store the secret itself; record only that one exists
             cats["possible_secrets"].add(f"pattern match (redacted) len={len(s)}")
     cats["ipv4"] = {ip for ip in cats["ipv4"] if not ip.startswith(("0.", "255."))}
-    f = [Finding(STAGE, TOOL, "strings", "summary", {"total": len(strs)}, subject=rel, provenance=Provenance.EXTRACTED)]
+    f = [
+        Finding(STAGE, TOOL, "strings", "summary", {"total": len(strs)}, subject=rel, provenance=Provenance.EXTRACTED),
+        Finding(STAGE, TOOL, "strings", "strings", strs[:2000], subject=rel, provenance=Provenance.EXTRACTED),
+    ]
     for k, v in cats.items():
         if v:
             conf = Confidence.CONFIRMED if k != "possible_secrets" else Confidence.TENTATIVE
