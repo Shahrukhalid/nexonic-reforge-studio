@@ -153,8 +153,8 @@ class DecompilationSynthesizer:
                 val = r["value"]
                 fname = val.get("name") or r.get("key", "").split("function:", 1)[-1] or "sub_unknown"
                 faddr = val.get("address", "0x0")
-                instructions = val.get("instructions", [])
-                code = val.get("code", "")
+                instructions = val.get("assembly_lines") or val.get("instructions", [])
+                code = val.get("pseudocode") or val.get("code", "")
                 if not code and instructions:
                     code = "\n".join(f"// {insn}" for insn in instructions)
                 fn = DecompiledFunction(
