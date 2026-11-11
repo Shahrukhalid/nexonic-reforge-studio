@@ -8,15 +8,20 @@ namespace Nexonic.ReForge.Reference
 {
     public interface ICalculator
     {
-        int Add(int a, int b);
+        int AddNumbers(int a, int b);
         int Factorial(int n);
+        bool ValidateLicenseKey(string key);
+        string GetHealthStatus();
     }
 
-    public class ReferenceCalculator : ICalculator
+    public class ReferenceApp : ICalculator
     {
         public const string ServiceEndpoint = "https://ref.internal/v1/calc";
 
-        public int Add(int a, int b) => a + b;
+        public int AddNumbers(int a, int b)
+        {
+            return a + b;
+        }
 
         public int Factorial(int n)
         {
@@ -26,10 +31,21 @@ namespace Nexonic.ReForge.Reference
             return acc;
         }
 
+        public bool ValidateLicenseKey(string key)
+        {
+            return key == "reforge_net_license_valid_2026";
+        }
+
+        public string GetHealthStatus()
+        {
+            return "HEALTHY_ACTIVE";
+        }
+
         public static void Main(string[] args)
         {
-            var calc = new ReferenceCalculator();
-            Console.WriteLine($"Result: {calc.Add(20, 22)}");
+            var app = new ReferenceApp();
+            Console.WriteLine("[REF_NET] Reference .NET App Initialized");
+            Console.WriteLine(string.Format("Result: {0}", app.AddNumbers(20, 22)));
         }
     }
 }

@@ -8,34 +8,29 @@ package com.nexonic.reforge.reference;
 public class ReferenceService {
     public static final String APP_ID = "com.nexonic.reforge.reference";
     public static final int VERSION_CODE = 800;
+    public static final String SECRET_TOKEN = "java_ref_token_98765";
 
     private boolean authenticated = false;
 
-    public boolean authenticate(String token) {
-        if ("ref_java_token_2026".equals(token)) {
+    public boolean checkToken(String token) {
+        if (SECRET_TOKEN.equals(token)) {
             this.authenticated = true;
             return true;
         }
         return false;
     }
 
-    public int computeChecksum(byte[] buffer) {
-        if (buffer == null || buffer.length == 0) {
-            return 0;
-        }
-        int sum = 0;
-        for (byte b : buffer) {
-            sum = (sum * 31) + (b & 0xFF);
-        }
-        return sum;
+    public int computeSum(int a, int b) {
+        return a + b;
     }
 
-    public String getStatus() {
-        return authenticated ? "AUTHENTICATED" : "GUEST";
+    public String getServiceStatus() {
+        return authenticated ? "OPERATIONAL" : "STANDBY";
     }
 
     public static void main(String[] args) {
         ReferenceService service = new ReferenceService();
-        System.out.println("Status: " + service.getStatus());
+        System.out.println("[REF_JAVA] Reference Java Service Initialized");
+        System.out.println("Status: " + service.getServiceStatus());
     }
 }

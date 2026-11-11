@@ -25,7 +25,9 @@ from . import (
     extract,
     fingerprint,
     identify,
+    javaclass,
     msi,
+    pyc,
     pyinstaller,
     strings,
     synthesizer,
@@ -209,6 +211,10 @@ class Orchestrator:
                             subjects.append((dest / f"{e.name}.pyc", f"{rel}::{e.name}.pyc", "pyc"))
             if fm == "dex" and not quick:
                 self._rec(pid, android.dex_findings(p, rel))
+            if fm == "pyc" and not quick:
+                self._rec(pid, pyc.analyze(p, rel))
+            if fm == "java-class" and not quick:
+                self._rec(pid, javaclass.analyze(p, rel))
             ctx.check()
             if not quick:
                 self._rec(pid, strings.analyze(p, rel))

@@ -71,6 +71,15 @@ def analyze(path: Path, rel: str = "") -> list[Finding]:
                            {"count": len(types), "methods": len(_rows(t.MethodDef)),
                             "namespaces": dict(sorted(ns.items(), key=lambda kv: -kv[1])[:60]),
                             "items": types[:MAX_ITEMS]}, subject=rel))
+        methods = [_s(r.Name) for r in _rows(t.MethodDef) if r.Name and not _s(r.Name).startswith(".")]
+        if methods:
+            out.append(Finding(STAGE, TOOL, "functions", "dotnet_methods",
+                               methods[:MAX_ITEMS], Confidence.CONFIRMED,
+                               Provenance.PARSED, "MethodDef metadata table", rel))
+            for m in methods:
+                out.append(Finding("decompiled", TOOL, "decompiled_functions",
+                                   f"function:{m}", {"name": m}, Confidence.CONFIRMED,
+                                   Provenance.PARSED, "MethodDef symbol", rel))
         pinv = []
         for r in _rows(t.ImplMap):
             scope = r.ImportScope.row if r.ImportScope is not None else None
