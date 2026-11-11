@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexonic-reforge-studio"
-version = "0.10.0"
+version = "0.11.0"
 description = "Nexonic ReForge Studio - automated software analysis and clean-room reimplementation workbench"
 authors = [{ name = "Nexonic Technologies" }]
 license = { text = "Proprietary (private development)" }

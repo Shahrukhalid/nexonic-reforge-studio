@@ -149,25 +149,29 @@ class DecompilationSynthesizer:
 
         # Process any pre-synthesized findings first
         for r in raw:
-            if r.get("kind") == "decompiled_synthesized" and isinstance(r.get("value"), dict):
+            if r.get("kind") in ("decompiled_synthesized", "decompiled_functions") and isinstance(r.get("value"), dict):
                 val = r["value"]
-                fname = val.get("name") or r.get("key", "sub_unknown")
+                fname = val.get("name") or r.get("key", "").split("function:", 1)[-1] or "sub_unknown"
                 faddr = val.get("address", "0x0")
+                instructions = val.get("instructions", [])
+                code = val.get("code", "")
+                if not code and instructions:
+                    code = "\n".join(f"// {insn}" for insn in instructions)
                 fn = DecompiledFunction(
                     name=fname,
                     address=faddr,
-                    size=val.get("size", 0),
-                    arch=val.get("arch", "x86-64"),
+                    size=val.get("size", len(instructions) * 2),
+                    arch=val.get("arch", "bytecode"),
                     signature=val.get("signature", f"void {fname}()"),
                     confidence=str(r.get("confidence", Confidence.CONFIRMED.value)),
                     confidence_score=float(val.get("confidence_score", 0.90)),
                     provenance=str(r.get("provenance", Provenance.PARSED.value)),
                     is_verified_decompiler=bool(val.get("is_verified_decompiler", False)),
-                    assembly_lines=val.get("assembly_lines", []),
-                    pseudocode=val.get("code", ""),
+                    assembly_lines=instructions,
+                    pseudocode=code,
                     callers=val.get("callers", []),
                     callees=val.get("callees", []),
-                    variables=val.get("variables", []),
+                    variables=val.get("variables", val.get("varnames", [])),
                     cfg_blocks=val.get("cfg_blocks", []),
                     cyclomatic_complexity=int(val.get("cyclomatic_complexity", 1)),
                     source_asm_map=val.get("source_asm_map", []),
@@ -526,7 +530,7 @@ class DecompilationSynthesizer:
                     },
                     confidence=Confidence(fn.confidence) if fn.confidence in Confidence._value2member_map_ else Confidence.TENTATIVE,
                     provenance=Provenance(fn.provenance) if fn.provenance in Provenance._value2member_map_ else Provenance.INFERRED,
-                    rationale="Synthesized readable clean-room pseudocode with preserved addresses and CFG",
+                    evidence="Synthesized readable clean-room pseudocode with preserved addresses and CFG",
                     subject=rel_subject,
                 )
             )

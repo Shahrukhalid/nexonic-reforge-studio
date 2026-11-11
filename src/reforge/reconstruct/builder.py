@@ -92,6 +92,16 @@ def build_reconstructed_project(
     dist = output_dir or (project_dir / "dist")
     dist.mkdir(parents=True, exist_ok=True)
 
+    # Snapshot pre-existing files in dist to prevent stale file inclusion
+    pre_existing: dict[Path, float] = {}
+    if dist.is_dir():
+        for f in dist.rglob("*"):
+            if f.is_file():
+                try:
+                    pre_existing[f.resolve()] = f.stat().st_mtime
+                except Exception:
+                    pass
+
     t0 = time.time()
     lang = cfg["language"]
     name = cfg["name"]
@@ -189,6 +199,7 @@ def build_reconstructed_project(
             cmd_cfg = [cmake, "-B", str(build_dir), "-DCMAKE_BUILD_TYPE=Release"]
             res_cfg = run_tool(cmd_cfg, cwd=project_dir, timeout=timeout)
             if not res_cfg.ok:
+                _clean_stale_artifacts(dist, name)
                 return BuildResult(
                     success=False,
                     artifacts=[],
@@ -209,6 +220,7 @@ def build_reconstructed_project(
             # 2. Direct compiler fallback (gcc, clang, cl)
             cc = shutil.which("gcc") or shutil.which("clang") or shutil.which("cl")
             if not cc:
+                _clean_stale_artifacts(dist, name)
                 return BuildResult(
                     success=False,
                     artifacts=[],
@@ -232,6 +244,7 @@ def build_reconstructed_project(
     elif lang == "csharp":
         dotnet = shutil.which("dotnet")
         if not dotnet:
+            _clean_stale_artifacts(dist, name)
             return BuildResult(
                 success=False,
                 artifacts=[],
@@ -283,6 +296,7 @@ def build_reconstructed_project(
                             if cf.is_file():
                                 zf.write(cf, arcname=cf.relative_to(classes_dir).as_posix())
         else:
+            _clean_stale_artifacts(dist, name)
             return BuildResult(
                 success=False,
                 artifacts=[],
@@ -303,21 +317,32 @@ def build_reconstructed_project(
             duration=0.0,
         )
 
-    # Collect produced artifacts only if build succeeded
+    # Collect produced artifacts only if build succeeded and file is newly generated or modified
     artifacts: list[Path] = []
     digests: dict[str, str] = {}
-    if res.ok and dist.is_dir():
+    build_ok = res.ok
+
+    if build_ok and dist.is_dir():
         for f in dist.rglob("*"):
             if f.is_file() and not f.name.endswith((".spec", ".sha256", ".log")):
                 if "build_temp" not in str(f) and "spec" not in str(f) and "cmake_build" not in str(f):
-                    artifacts.append(f)
+                    res_f = f.resolve()
+                    # Only collect if created or modified during this current build run
+                    if res_f not in pre_existing or f.stat().st_mtime > pre_existing[res_f]:
+                        if f.stat().st_size > 0:
+                            artifacts.append(f)
+
+        # Ensure zero-output builds cannot report success
+        if not artifacts:
+            build_ok = False
+            res.stderr = (res.stderr + "\n" if res.stderr else "") + "Build reported completion but generated zero valid output artifacts."
 
         # Calculate digests
         for a in artifacts:
             digests[a.name] = _sha256(a)
 
         # Bundle standalone archive if artifacts exist
-        if artifacts:
+        if build_ok and artifacts:
             import zipfile
             zip_path = dist / f"{name}_dist.zip"
             with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -325,13 +350,21 @@ def build_reconstructed_project(
                     zf.write(a, arcname=a.name)
             digests[zip_path.name] = _sha256(zip_path)
             artifacts.append(zip_path)
-    elif not res.ok and dist.is_dir():
+
+    elif not build_ok and dist.is_dir():
         # Remove any partial or stale binaries to prevent false positive distribution
         for f in dist.glob(f"{name}.*"):
             try:
                 f.unlink(missing_ok=True)
             except Exception:
                 pass
+        # Clean any newly created partial files from failed run
+        for f in dist.rglob("*"):
+            if f.is_file() and f.resolve() not in pre_existing:
+                try:
+                    f.unlink(missing_ok=True)
+                except Exception:
+                    pass
 
     manifest_file = dist / "build_manifest.json"
     manifest_data = {
@@ -339,7 +372,7 @@ def build_reconstructed_project(
         "language": lang,
         "target": target,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "success": res.ok,
+        "success": build_ok,
         "artifacts": [
             {"filename": a.name, "size": a.stat().st_size, "sha256": digests.get(a.name, "")}
             for a in artifacts
@@ -352,7 +385,7 @@ def build_reconstructed_project(
     shutil.rmtree(dist / "spec", ignore_errors=True)
 
     return BuildResult(
-        success=res.ok,
+        success=build_ok,
         artifacts=artifacts,
         output_dir=dist,
         stdout=res.stdout,

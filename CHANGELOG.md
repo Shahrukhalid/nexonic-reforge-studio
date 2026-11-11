@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.11.0] - 2026-11-11
+### Added
+- **Independent Ground-Truth Benchmarking Engine**:
+  - Replaced synthetic finding injection with a genuinely isolated pipeline: reference targets are compiled into real binaries (.pyc, .exe, .class, .dll, native binaries) and analyzed strictly through ReForge's standard analysis engine without any access to ground-truth specifications or original source text.
+  - Quantitative measurement of real precision, recall, F1, false positives, false negatives, compiler toolchain versions, optimization levels, and explicit reporting for skipped/unavailable compilers.
+  - Added negative regression verification tests confirming accuracy scores drop appropriately when known functions are missing or renamed.
+- **Reference-Language Compilation Matrix**:
+  - Validated native compilation paths across C, C++ (`reference_engine.cpp`), Go, Rust, Java, C# (`csc` and `dotnet`), Python (`py_compile`), and TypeScript (`node` / `tsc`).
+- **Enhanced Clean-Room Technical Isolation Auditor**:
+  - Added normalized sequence similarity and sliding-window analysis (`similarity_threshold=0.60`) in `reconstruct.isolation` to detect modified or paraphrased copied content.
+  - Enforced symlink validation and directory traversal prevention (`is_relative_to` checks).
+  - Explicit legal disclaimer and evidence-based reporting: clearly establishes that technical isolation testing does not constitute legal clean-room certification or copyright non-infringement.
+- **Build Output Integrity & Anti-Stale Protections**:
+  - Pre-existing file snapshotting in `reconstruct.builder`: strictly isolates newly produced artifacts and ignores stale binaries from earlier builds.
+  - Zero-output build rejection: builds returning success with zero produced artifacts are strictly marked as failed.
+  - SHA-256 digest validation and manifest verification.
+- **Real End-to-End Workflow & Bytecode Analysis**:
+  - Direct bytecode analyzers for Python (.pyc via `marshal` and `dis`) and Java (.class via JVM constant pool / method table parser).
+  - Full end-to-end reconstruction demonstrated on real compiled bytecode artifacts.
+
 ## [0.10.0] - 2026-11-11
 ### Added
 - **Formal Dominator Tree & Advanced Control Flow Graph (CFG) Analysis**:
