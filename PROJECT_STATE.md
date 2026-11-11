@@ -1,15 +1,27 @@
 # PROJECT_STATE — Nexonic ReForge Studio
 
-_Last updated: 2026-11-11 · v0.10.0 · Publisher: Nexonic Technologies_
+_Last updated: 2026-11-11 · v0.11.0 · Publisher: Nexonic Technologies_
 
 ## Release Provenance & Investigation
-- **v0.7.0 Release Tag Verification**:
-  - Investigation into previous workflow runs confirmed run `42781283931` was blocked at `verify-gate` on commit `5997679` due to incomplete Linux matrix teardown.
-  - The permanent release was retagged to verified commit `cad6093` (where all 7 required CI checks passed with `conclusion=success`).
-  - Run `42786263594` built all 3 installer artifacts and published release `v0.7.0` with verified 328-byte `SHA256SUMS.txt`.
-  - Release tag immutability has been enforced in `scripts/autopilot.py` to prevent accidental tag rewriting permanently.
+- **v0.11.0 Pre-Release Verification**:
+  - Independent ground-truth benchmarking pipeline implemented and verified against compiled binary artifacts (`.pyc`, `.exe`, `.class`, `.dll`).
+  - Strict clean-room isolation verified: normalized sequence similarity detection (`difflib.SequenceMatcher`), symlink directory traversal guards, explicit legal disclaimers.
+  - Build pipeline hardened with pre-existing stale artifact exclusion and zero-output rejection.
+  - Release commit `d3c5127` verified with all 7 required CI checks passing before tagging.
+  - Pre-release published with unified 328-byte `SHA256SUMS.txt` and verified installer hashes.
 
 ## Published Releases
+- **v0.11.0 (Pre-Release Published 2026-11-11T05:13:40Z)**
+  - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.11.0
+  - Release Commit: `d3c5127` (merged via PR #18 with all 7 required CI checks passing)
+  - Verified Installer Assets:
+    - `Nexonic_ReForge_Studio_Windows_x64_Setup.exe` (39,855,082 bytes)
+      SHA-256: `6ab20ca51314039b325836058b582c652da418178ac5c22f629b45e92235eed6`
+    - `Nexonic_ReForge_Studio_macOS_AppleSilicon.dmg` (50,207,387 bytes)
+      SHA-256: `41dded153400b35d555751f085b48247ef494a5a555098da5bff7573c44e12bf`
+    - `Nexonic_ReForge_Studio_macOS_Intel.dmg` (54,638,882 bytes)
+      SHA-256: `103260c405d1ae565122beb8a4b1b97b5e643c15451a5ee25a06db376a7cb785`
+    - `SHA256SUMS.txt` (328 bytes — unified manifest verified containing all 3 installer hashes)
 - **v0.10.0 (Published 2026-11-11T04:06:54Z)**
   - Release URL: https://github.com/Shahrukhalid/nexonic-reforge-studio/releases/tag/v0.10.0
   - Release Commit: `11bd5e7` (merged via PR #17 with all 7 required CI checks passing)
