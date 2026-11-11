@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.10.0] - 2026-11-11
+### Added
+- **Formal Dominator Tree & Advanced Control Flow Graph (CFG) Analysis**:
+  - `compute_cfg_dominance`: Computes formal dominator tree ($\text{Dom}(n)$), immediate dominators ($\text{idom}(n)$), Cytron et al. dominance frontiers ($\text{DF}(x)$), natural loops via back-edge identification ($l \to h$ where $h \in \text{Dom}(l)$), and loop bodies.
+  - Indirect branch detection (`is_indirect_instruction`) for x86/x64, ARM/AArch64, and MIPS, labeling indirect control transfers and dotted edges in Graphviz DOT and ASCII flow representations.
+  - Dead code / unreachable basic block detection (`is_unreachable`, `unreachable_blocks`) with visual badges in graph representations.
+- **Ground Truth Reference Benchmarking Suite**:
+  - Comprehensive authorized reference fixtures with documented ground-truth contracts for C (`reference_calc.c`), Go (`reference_service.go`), Rust (`reference_lib.rs`), Python (`reference_app.py`), TypeScript (`reference_app.ts`), C# (`ReferenceApp.cs`), and Java (`ReferenceService.java`).
+  - Automated compilation and benchmarking engine (`reforge.analysis.benchmark_targets`): compiles reference fixtures using discovered host toolchains (`gcc`, `go`, `rustc`, `javac`, `py_compile`), maps findings to ground-truth specifications, and evaluates precision, recall, and F1 accuracy via `GroundTruthEvaluator`.
+- **Clean-Room Isolation Audit Engine**:
+  - `verify_cleanroom_isolation` (`reforge.reconstruct.isolation`): scans reconstructed clean-room workspaces against extracted assets to guarantee zero verbatim binary leaks, hash collisions, or proprietary copyright/confidentiality markers.
+- **Compiler & Packaging Pipeline Hardening**:
+  - Hardened build failure classification in `reforge.reconstruct.builder`: compilation failures strictly set `success=False`, zero out artifacts, and purge stale/partial binaries from distribution folders.
+  - Structured test execution summary parser in `reforge.reconstruct.runner`: extracts passed, failed, and skipped counts and execution timings across Pytest, Cargo, .NET, Maven Surefire, and Go test runners.
+- **GUI Verification & Visual Documentation**:
+  - Verified and captured high-resolution screenshots for all 12 GUI pages in `docs/screenshots/`.
+
 ## [0.9.0] - 2026-11-10
 ### Added
 - **Interactive Control Flow Graph (CFG) Visualizer**:
