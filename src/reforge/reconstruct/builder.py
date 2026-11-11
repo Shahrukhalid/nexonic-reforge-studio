@@ -32,12 +32,22 @@ class BuildResult:
     digests: dict[str, str] = field(default_factory=dict)
 
 
+def _clean_stale_artifacts(dist: Path, name: str) -> None:
+    """Remove any stale or partial binaries for this project name from the output directory."""
+    if dist.is_dir():
+        for f in dist.glob(f"{name}.*"):
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
 def detect_build_configuration(project_dir: Path) -> dict[str, str]:
     """Detect language, target name, and primary entry point for a clean-room project."""
     project_dir = Path(project_dir)
     cfg: dict[str, str] = {"language": "unknown", "name": project_dir.name, "entry": ""}
 
-    if (project_dir / "pyproject.toml").is_file() or (project_dir / "setup.py").is_file():
+    if (project_dir / "pyproject.toml").is_file() or (project_dir / "setup.py").is_file() or any(project_dir.rglob("*.py")):
         cfg["language"] = "python"
         src_py = list(project_dir.glob("src/**/main.py")) or list(project_dir.glob("*.py"))
         if src_py:
@@ -90,6 +100,7 @@ def build_reconstructed_project(
     if lang == "python":
         entry = cfg.get("entry")
         if not entry:
+            _clean_stale_artifacts(dist, name)
             return BuildResult(
                 success=False,
                 artifacts=[],
@@ -282,6 +293,7 @@ def build_reconstructed_project(
             )
 
     else:
+        _clean_stale_artifacts(dist, name)
         return BuildResult(
             success=False,
             artifacts=[],
@@ -291,28 +303,35 @@ def build_reconstructed_project(
             duration=0.0,
         )
 
-    # Collect produced artifacts
+    # Collect produced artifacts only if build succeeded
     artifacts: list[Path] = []
-    if dist.is_dir():
+    digests: dict[str, str] = {}
+    if res.ok and dist.is_dir():
         for f in dist.rglob("*"):
             if f.is_file() and not f.name.endswith((".spec", ".sha256", ".log")):
                 if "build_temp" not in str(f) and "spec" not in str(f) and "cmake_build" not in str(f):
                     artifacts.append(f)
 
-    # Calculate digests
-    digests: dict[str, str] = {}
-    for a in artifacts:
-        digests[a.name] = _sha256(a)
+        # Calculate digests
+        for a in artifacts:
+            digests[a.name] = _sha256(a)
 
-    # Bundle standalone archive if artifacts exist
-    if res.ok and artifacts:
-        import zipfile
-        zip_path = dist / f"{name}_dist.zip"
-        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            for a in artifacts:
-                zf.write(a, arcname=a.name)
-        digests[zip_path.name] = _sha256(zip_path)
-        artifacts.append(zip_path)
+        # Bundle standalone archive if artifacts exist
+        if artifacts:
+            import zipfile
+            zip_path = dist / f"{name}_dist.zip"
+            with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                for a in artifacts:
+                    zf.write(a, arcname=a.name)
+            digests[zip_path.name] = _sha256(zip_path)
+            artifacts.append(zip_path)
+    elif not res.ok and dist.is_dir():
+        # Remove any partial or stale binaries to prevent false positive distribution
+        for f in dist.glob(f"{name}.*"):
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
 
     manifest_file = dist / "build_manifest.json"
     manifest_data = {
