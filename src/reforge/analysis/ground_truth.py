@@ -143,10 +143,21 @@ class GroundTruthEvaluator:
                     recovered_endpoints.update(str(x) for x in val if isinstance(x, (str, int)))
 
         # Evaluate Functions
+        def _match_fn(exp_name: str, candidate_names: set[str]) -> bool:
+            if exp_name in candidate_names:
+                return True
+            for cand in candidate_names:
+                if cand.endswith("." + exp_name) or cand.endswith("::" + exp_name):
+                    return True
+                base = cand.split("(", 1)[0].strip()
+                if base == exp_name or base.endswith("." + exp_name) or base.endswith("::" + exp_name):
+                    return True
+            return False
+
         exp_funcs = set(ef.name for ef in spec.expected_functions)
-        matched_funcs = sorted(exp_funcs & recovered_func_names)
-        missing_funcs = sorted(exp_funcs - recovered_func_names)
-        extra_funcs = sorted(recovered_func_names - exp_funcs)
+        matched_funcs = sorted([ef for ef in exp_funcs if _match_fn(ef, recovered_func_names)])
+        missing_funcs = sorted([ef for ef in exp_funcs if not _match_fn(ef, recovered_func_names)])
+        extra_funcs = sorted([rf for rf in recovered_func_names if not any(_match_fn(ef, {rf}) for ef in exp_funcs)])
 
         func_breakdown = MetricBreakdown(
             category="Functions & Symbols",
@@ -174,8 +185,11 @@ class GroundTruthEvaluator:
 
         # Evaluate Endpoints
         exp_endpoints = set(spec.expected_endpoints)
-        matched_endpoints = [e for e in exp_endpoints if any(e in rec for rec in recovered_endpoints)]
-        missing_endpoints = [e for e in exp_endpoints if not any(e in rec for rec in recovered_endpoints)]
+        matched_endpoints = [
+            e for e in exp_endpoints
+            if any(e in rec for rec in recovered_endpoints) or _match_fn(e, recovered_func_names)
+        ]
+        missing_endpoints = [e for e in exp_endpoints if e not in matched_endpoints]
         extra_endpoints = [e for e in recovered_endpoints if not any(exp in e for exp in exp_endpoints)]
 
         ep_breakdown = MetricBreakdown(

@@ -287,14 +287,15 @@ def compile_reference_fixture(
         bin_name = f"{stem}.exe" if subprocess.os.name == "nt" else stem
         out_bin = output_dir / bin_name
 
-        opt_flag = "/O2" if is_msvc else "-O2"
-        if opt_level == "debug":
-            opt_flag = "/Od" if is_msvc else "-O0"
+        if opt_level == "release":
+            opt_flags = ["/O2"] if is_msvc else ["-O2"]
+        else:
+            opt_flags = ["/Od", "/Z7"] if is_msvc else ["-O0", "-g"]
 
         if is_msvc:
-            cmd = [compiler_path, opt_flag, f"/Fe:{out_bin}", str(fixture_path)]
+            cmd = [compiler_path] + opt_flags + [f"/Fe:{out_bin}", str(fixture_path)]
         else:
-            cmd = [compiler_path, opt_flag, "-o", str(out_bin), str(fixture_path)]
+            cmd = [compiler_path] + opt_flags + ["-o", str(out_bin), str(fixture_path)]
 
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
@@ -304,7 +305,7 @@ def compile_reference_fixture(
                     output_binary=out_bin,
                     toolchain_used=used_name,
                     toolchain_version=ver,
-                    optimization_level=opt_flag,
+                    optimization_level=" ".join(opt_flags),
                     architecture=host_arch,
                 )
             return CompilationReport(
@@ -380,7 +381,7 @@ def compile_reference_fixture(
                     output_binary=out_bin,
                     toolchain_used="rustc",
                     toolchain_version=ver,
-                    optimization_level=opt_flag,
+                    optimization_level=" ".join(opt_flags),
                     architecture=host_arch,
                 )
             return CompilationReport(

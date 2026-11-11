@@ -6,15 +6,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define REF_EXPORT __declspec(dllexport)
+#else
+#define REF_EXPORT __attribute__((visibility("default")))
+#endif
+
 #define STATUS_OK 0
 #define STATUS_AUTH_FAILED 1
 #define STATUS_OVERFLOW 2
 
-int calc_add(int a, int b) {
+REF_EXPORT int calc_add(int a, int b) {
     return a + b;
 }
 
-int calc_factorial(int n) {
+REF_EXPORT int calc_factorial(int n) {
     if (n <= 1) {
         return 1;
     }
@@ -25,7 +31,7 @@ int calc_factorial(int n) {
     return result;
 }
 
-unsigned int calc_crc32(const unsigned char *data, int len) {
+REF_EXPORT unsigned int calc_crc32(const unsigned char *data, int len) {
     unsigned int crc = 0xFFFFFFFF;
     for (int i = 0; i < len; i++) {
         crc ^= data[i];
@@ -40,7 +46,7 @@ unsigned int calc_crc32(const unsigned char *data, int len) {
     return ~crc;
 }
 
-int authenticate_user(const char *username, const char *token) {
+REF_EXPORT int authenticate_user(const char *username, const char *token) {
     if (!username || !token) {
         return STATUS_AUTH_FAILED;
     }

@@ -89,6 +89,10 @@ def _one(b, rel: str, slice_tag: str = "") -> list[Finding]:
                      {"count": len(imports), "items": imports[:MAX_LIST]}, subject=rel))
     f.append(Finding(STAGE, TOOL, "exports", tag + "exported_functions",
                      {"count": len(exports), "items": exports[:MAX_LIST]}, subject=rel))
+    syms = sorted({s.name for s in getattr(b, "symbols", []) if getattr(s, "name", None)})
+    if syms:
+        f.append(Finding(STAGE, TOOL, "function", tag + "recovered_functions",
+                         {"count": len(syms), "items": syms[:MAX_LIST]}, subject=rel))
     return f
 
 
