@@ -282,15 +282,16 @@ def compile_reference_fixture(
                 error_message=f"No C/C++ compiler found on PATH (probed: {', '.join(candidates)})",
             )
 
-        ver = _get_tool_version([compiler_path, "--version" if "cl" not in used_name else "?"])
+        is_msvc = Path(compiler_path).stem.lower() in ("cl", "clang-cl")
+        ver = _get_tool_version([compiler_path, "?" if is_msvc else "--version"])
         bin_name = f"{stem}.exe" if subprocess.os.name == "nt" else stem
         out_bin = output_dir / bin_name
 
-        opt_flag = "/O2" if "cl" in used_name else "-O2"
+        opt_flag = "/O2" if is_msvc else "-O2"
         if opt_level == "debug":
-            opt_flag = "/Od" if "cl" in used_name else "-O0"
+            opt_flag = "/Od" if is_msvc else "-O0"
 
-        if "cl" in used_name:
+        if is_msvc:
             cmd = [compiler_path, opt_flag, f"/Fe:{out_bin}", str(fixture_path)]
         else:
             cmd = [compiler_path, opt_flag, "-o", str(out_bin), str(fixture_path)]

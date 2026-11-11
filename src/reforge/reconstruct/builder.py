@@ -235,7 +235,8 @@ def build_reconstructed_project(
                 sources = [str(p) for p in project_dir.rglob("*.c")] or [str(p) for p in project_dir.rglob("*.cpp")]
 
             out_bin = dist / (f"{name}.exe" if sys.platform == "win32" else name)
-            if "cl" in Path(cc).name.lower():
+            is_cl = Path(cc).stem.lower() in ("cl", "clang-cl")
+            if is_cl:
                 cmd = [cc, "/O2", f"/Fe:{out_bin}"] + sources
             else:
                 cmd = [cc, "-O2", "-o", str(out_bin)] + sources
